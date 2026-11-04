@@ -1,0 +1,144 @@
+---  ___                           __   ______ ---
+--- |   \ _ _ ___ __ _ _ __  ___ _ \ \ / /__ / ---
+--- | |) | '_/ -_) _` | '  \/ -_) '/\ V / |_ \ ---
+--- |___/|_| \___\__,_|_|_|_\___|_|  \_/ |___/ ---
+Replica: 0 / 1
+Logdir: ../../runs/stage0/dreamer_debug
+Run script: train
+Observations
+  image            Space(uint8, shape=(64, 64, 3), low=0, high=255)
+  reward           Space(float32, shape=(), low=-inf, high=inf)
+  is_first         Space(bool, shape=(), low=False, high=True)
+  is_last          Space(bool, shape=(), low=False, high=True)
+  is_terminal      Space(bool, shape=(), low=False, high=True)
+Actions
+  action           Space(int32, shape=(), low=0, high=17)
+Extras
+  consec           Space(int32, shape=(), low=-2147483648, high=2147483647)
+  stepid           Space(uint8, shape=(20,), low=0, high=255)
+  dyn/deter        Space(float32, shape=(8,), low=-inf, high=inf)
+  dyn/stoch        Space(float32, shape=(2, 4), low=-inf, high=inf)
+JAX devices (1): [TFRT_CPU_0]
+Policy devices: TFRT_CPU_0
+Train devices:  TFRT_CPU_0
+Initializing parameters...
+Optimizer opt has 11,735 params:
+         6,339 dec
+         3,752 enc
+           816 dyn
+           297 pol
+           189 rew
+           189 val
+           153 con
+Done initializing!
+Compiling 1 checkpoint groups...
+Largest checkpoint group: 0 GB
+Compiling train and report...
+Train cost analysis:
+  FLOPS:            2.2e+09
+  Memory (temp):    4.0e+07
+  Memory (inputs):  1.2e+06
+  Memory (outputs): 1.5e+05
+  Memory (code):    1.2e+06
+
+Report cost analysis:
+  FLOPS:            3.3e+08
+  Memory (temp):    5.2e+06
+  Memory (inputs):  6.4e+05
+  Memory (outputs): 2.4e+06
+  Memory (code):    1.4e+06
+
+Done compiling!
+Did not find any checkpoint.
+Saving checkpoint: ../../runs/stage0/dreamer_debug/ckpt/20261104T183810F088781
+Saved checkpoint.
+Start training loop
+
+--------------------[Agent Step 420]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+train/loss/con 0.9 / train/loss/dyn 1 / train/loss/image 1683.62 / train/loss/policy -4e-5 / train/loss/rep 1 / train/loss/repval 3.22 / train/loss/rew 1.61 / train/loss/value 0.15 / train/rand/action 1 / replay/replay_ratio 7.41 / fps/policy 55.78 / fps/train 329.35
+
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+
+--------------------[Agent Step 672]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+episode/score 0.1 / episode/length 145 / train/loss/con 0.9 / train/loss/dyn 1 / train/loss/image 1660.1 / train/loss/policy -4e-5 / train/loss/rep 1 / train/loss/repval 3.21 / train/loss/rew 1.61 / train/loss/value 0.15 / train/rand/action 1 / replay/replay_ratio 8.73 / fps/policy 49.82 / fps/train 395.36
+
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+
+--------------------[Agent Step 684]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+train/loss/con 0.88 / train/loss/dyn 1 / train/loss/image 1664.13 / train/loss/policy -4e-5 / train/loss/rep 1 / train/loss/repval 3.22 / train/loss/rew 1.61 / train/loss/value 0.15 / train/rand/action 1 / replay/replay_ratio 7.33 / fps/policy 0.97 / fps/train 6.49
+
+Saving checkpoint: ../../runs/stage0/dreamer_debug/ckpt/20261104T183834F922659
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+Saved checkpoint.
+
+--------------------[Agent Step 948]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+episode/score 0.1 / episode/length 186 / train/loss/con 0.91 / train/loss/dyn 1 / train/loss/image 1647.64 / train/loss/policy -3.9e-5 / train/loss/rep 1 / train/loss/repval 3.2 / train/loss/rew 1.61 / train/loss/value 0.15 / train/rand/action 1 / replay/replay_ratio 8.67 / fps/policy 51.78 / fps/train 407.97
+
+2026-11-04 18:38:42.552750: E external/xla/xla/python/profiler/internal/python_hooks.cc:400] Can't import tensorflow.python.profiler.trace
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+Start JAX profiler: ../../runs/stage0/dreamer_debug
+
+--------------------[Agent Step 1_212]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+episode/score 2.1 / episode/length 140 / train/loss/con 0.89 / train/loss/dyn 1 / train/loss/image 1623.86 / train/loss/policy -4e-5 / train/loss/rep 1 / train/loss/repval 3.2 / train/loss/rew 1.61 / train/loss/value 0.15 / train/rand/action 1 / replay/replay_ratio 9 / fps/policy 52.69 / fps/train 431.09
+
+2026-11-04 18:38:47.228400: E external/xla/xla/python/profiler/internal/python_hooks.cc:400] Can't import tensorflow.python.profiler.trace
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+Stop JAX profiler
+
+--------------------[Agent Step 1_320]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+episode/score 0.1 / episode/length 140 / train/loss/con 0.9 / train/loss/dyn 1 / train/loss/image 1607.95 / train/loss/policy -4e-5 / train/loss/rep 1 / train/loss/repval 3.21 / train/loss/rew 1.61 / train/loss/value 0.15 / train/rand/action 1 / replay/replay_ratio 8.96 / fps/policy 20.3 / fps/train 165.41
+
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+Saving checkpoint: ../../runs/stage0/dreamer_debug/ckpt/20261104T183850F351703
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+Saved checkpoint.
+
+--------------------[Agent Step 1_548]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+episode/score -0.9 / episode/length 69 / train/loss/con 0.9 / train/loss/dyn 1 / train/loss/image 1620.19 / train/loss/policy -4e-5 / train/loss/rep 1 / train/loss/repval 3.2 / train/loss/rew 1.61 / train/loss/value 0.15 / train/rand/action 1 / replay/replay_ratio 8.49 / fps/policy 44.77 / fps/train 345.6
+
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+
+--------------------[Agent Step 1_836]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+episode/score 2.1 / episode/length 127 / train/loss/con 0.9 / train/loss/dyn 1 / train/loss/image 1588.45 / train/loss/policy -4e-5 / train/loss/rep 1 / train/loss/repval 3.2 / train/loss/rew 1.61 / train/loss/value 0.15 / train/rand/action 1 / replay/replay_ratio 8.86 / fps/policy 56.51 / fps/train 455.24
+
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+
+--------------------[Agent Step 1_935]--------------------
+Metrics filtered by: 'score|length|fps|ratio|train/loss/|train/rand/'
+episode/score 0.1 / episode/length 151
+
+Writing metrics: ../../runs/stage0/dreamer_debug/metrics.jsonl
+Writing metrics: ../../runs/stage0/dreamer_debug/scores.jsonl
+       61.74 real       170.89 user         7.94 sys
+          2414641152  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              415744  page reclaims
+                 190  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                 275  voluntary context switches
+              438617  involuntary context switches
+       2287799037892  instructions retired
+        559935811017  cycles elapsed
+          1796148224  peak memory footprint

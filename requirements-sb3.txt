@@ -1,0 +1,9 @@
+# .venv-sb3 — PPO, RecurrentPPO, DQN, eval, plots. Python 3.11 (/opt/homebrew/bin/python3.11).
+# Top-level deps only; exact resolved versions are in requirements-sb3.lock (pip freeze).
+#   /opt/homebrew/bin/python3.11 -m venv .venv-sb3
+#   .venv-sb3/bin/pip install -r requirements-sb3.lock
+torch==2.15.0
+stable-baselines3==2.9.2
+sb3-contrib==2.9.2
+crafter==1.8.3
+gymnasium==1.4.0

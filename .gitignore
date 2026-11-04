@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.venv*/
+
+# Training artifacts (never commit checkpoints or raw logdirs)
+runs/
+*.ckpt
+*.pkl
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,27 @@
+# .venv-dreamer — DreamerV3 training, its harness adapter, wm_eval. Python 3.11 (/opt/homebrew/bin/python3.11).
+# Derived from third_party/dreamerv3/requirements.txt (submodule @ e01491f) for macOS arm64, CPU only:
+#   jax[cuda12]==0.4.33   -> jax==0.4.33 + jaxlib==0.4.33 (CPU wheels)
+#   dropped: nvidia-cuda-nvcc-cu12, ale_py, autorom (Atari only), ipdb (debugging only)
+#   added:   crafter, cloudpickle (imported by embodied/core/driver.py), gymnasium (rlproj.envs)
+# Exact resolved versions are in requirements-dreamer.lock (pip freeze).
+#   /opt/homebrew/bin/python3.11 -m venv .venv-dreamer
+#   .venv-dreamer/bin/pip install -r requirements-dreamer.lock
+jax==0.4.33
+jaxlib==0.4.33
+numpy<2
+av
+chex
+colored_traceback
+einops
+elements>=3.19.1
+google-resumable-media>=2.7.2
+granular>=0.20.3
+jaxtyping
+ninjax>=3.5.1
+optax
+portal>=3.5.0
+scope>=0.4.4
+tqdm
+cloudpickle
+crafter==1.8.3
+gymnasium==1.4.0
