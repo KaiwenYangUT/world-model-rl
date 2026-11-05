@@ -1,0 +1,103 @@
+{
+  "started": "2026-11-04T19:55:58-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-sb3/bin/python",
+    "scripts/bench_device.py",
+    "--config",
+    "configs/stage0_bench_device.yaml"
+  ],
+  "config_path": "configs/stage0_bench_device.yaml",
+  "config": {
+    "exp": "stage0",
+    "method": "bench_device",
+    "seed": 0,
+    "env": {
+      "target": "place_table",
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "steps": 20480,
+    "devices": [
+      "cpu",
+      "mps"
+    ],
+    "vec_envs": [
+      "dummy",
+      "subproc"
+    ],
+    "repeats": 2,
+    "warm_cache": true,
+    "ppo": {
+      "n_envs": 8,
+      "n_steps": 128,
+      "n_epochs": 4,
+      "batch_size": 256,
+      "learning_rate": 0.00025,
+      "clip_range": 0.1,
+      "vf_coef": 0.5,
+      "ent_coef": 0.01
+    },
+    "out_dir": "results/stage0/bench_device"
+  },
+  "git": {
+    "commit": "b728f930bed92eeb56f6064b0801bff78fbd740c",
+    "dirty": false
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "cpu,mps",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "2.4.6",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "torch": "2.15.0",
+    "stable_baselines3": "2.9.2",
+    "sb3_contrib": "2.9.2"
+  },
+  "load_avg_start": [
+    3.37060546875,
+    2.4150390625,
+    2.025390625
+  ],
+  "finished": "2026-11-04T20:03:49-05:00",
+  "wall_clock_s": 470.58,
+  "load_avg_end": [
+    6.4501953125,
+    5.537109375,
+    3.80517578125
+  ],
+  "torch_version": "2.15.0",
+  "mps_available": true,
+  "summary": {
+    "cpu/dummy": {
+      "sps_steady_mean": 291.8,
+      "update_s_mean": 53.15,
+      "rollout_s_mean": 17.01
+    },
+    "mps/dummy": {
+      "sps_steady_mean": 847.5,
+      "update_s_mean": 2.94,
+      "rollout_s_mean": 21.28
+    },
+    "cpu/subproc": {
+      "sps_steady_mean": 347.4,
+      "update_s_mean": 53.19,
+      "rollout_s_mean": 5.76
+    },
+    "mps/subproc": {
+      "sps_steady_mean": 1660.0,
+      "update_s_mean": 2.76,
+      "rollout_s_mean": 9.57
+    }
+  },
+  "fastest": "mps/subproc"
+}

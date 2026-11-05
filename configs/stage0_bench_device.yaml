@@ -1,0 +1,30 @@
+# Stage 0 (T05): SB3 PPO CnnPolicy steps/sec on cpu vs mps. PLAN.md §4 Stage 0.
+#   .venv-sb3/bin/python scripts/bench_device.py --config configs/stage0_bench_device.yaml
+exp: stage0
+method: bench_device
+seed: 0
+
+env:                      # passed to rlproj.envs.make_env (train pool)
+  target: place_table
+  reward_mode: crafter
+  length: 10000
+
+steps: 20480              # 20 PPO iterations of 8 envs x 128 steps
+devices: [cpu, mps]
+vec_envs: [dummy, subproc]  # SB3 DummyVecEnv (one process) / SubprocVecEnv (one per env)
+repeats: 2                # runs are interleaved: repeat -> vec_env -> device
+warm_cache: true          # fill the CrafterTask world cache in every env first (timed separately)
+
+# rl-baselines3-zoo hyperparams/ppo.yml `atari` block (checked 2026-11-04), with constants
+# instead of its linear schedules (lin_2.5e-4, lin_0.1) and no frame stack; timing only.
+ppo:
+  n_envs: 8
+  n_steps: 128
+  n_epochs: 4
+  batch_size: 256
+  learning_rate: 2.5e-4
+  clip_range: 0.1
+  vf_coef: 0.5
+  ent_coef: 0.01
+
+out_dir: results/stage0/bench_device

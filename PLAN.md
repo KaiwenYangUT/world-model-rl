@@ -6,9 +6,9 @@
 
 ## Current status
 - **Date:** 2026-11-04
-- **Stage:** **Stage 0** (setup and baselines) on the MacBook Pro M2 Max. T00–T04 done. **Target = `place_table`** (random success 2.0% train / 4.5% held-out).
-- **Next action:** T05 (CPU vs MPS) and T06 (eval harness). `CrafterTask` now caches generated worlds: env throughput (warm cache) is 1,617 sps with 1 process and 6,181 sps with 8.
-- **Blockers:** none. The T04 env-sps numbers were taken with background load avg ≈ 3–4, so they are provisional (CONTRIBUTING.md rule 5); re-time on an idle machine before quoting them in the report.
+- **Stage:** **Stage 0** (setup and baselines) on the MacBook Pro M2 Max. T00–T05 done. **Target = `place_table`** (random success 2.0% train / 4.5% held-out). **PPO-CNN device = `mps` + `SubprocVecEnv`** (1,660 sps vs 347 on CPU).
+- **Next action:** T06 (eval harness), then T07 (`train_sb3.py` + PPO config). T10 (Dreamer launcher) can run in parallel.
+- **Blockers:** none. The T04/T05 timing numbers were taken with background load avg ≈ 3–7, so they are provisional (CONTRIBUTING.md rule 5); re-time on an idle machine before quoting them in the report.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
   - Results frozen: **Sun 2026-12-06**.
@@ -78,6 +78,8 @@ python3.11 -c "import torch;print(torch.__version__, torch.backends.mps.is_avail
 **CPU vs MPS:**
 - The SB3 PPO docs say PPO "is meant to be run primarily on the CPU, especially when you are not using a CNN".
 - SB3 documents no MPS support, so we measure both devices (T05). CPU may beat MPS for a small CNN on 64×64 inputs.
+- **Measured (T05, 2026-11-04, provisional load):** for PPO `CnnPolicy` with the Atari hyperparameters, **MPS wins**: 1,660 sps vs 347 sps on CPU, both with 8 `SubprocVecEnv` envs. The PPO update is ~19× faster on MPS. Single-observation rollout inference is somewhat slower on MPS, but the update dominates. SB3's `get_device` passes `"mps"` straight to `torch.device` (it only special-cases CUDA), and it works.
+- Re-check the device for DQN (batch 32, an update every 4 steps) and RecurrentPPO; small batches may favour CPU.
 - JAX runs CPU-only here.
 
 ---
@@ -230,7 +232,7 @@ Our shared harness depends only on numpy, crafter, and gymnasium, so it runs in 
 
 | Method | Guessed throughput | 50k | 100k | 250k | Measured |
 |---|---|---|---|---|---|
-| PPO-CNN (SB3, CPU) | 150–600 sps | 2–6 min | 3–11 min | 7–28 min | TBD (Stage 1) |
+| PPO-CNN (SB3, CPU) | 150–600 sps | 2–6 min | 3–11 min | 7–28 min | T05 benchmark (random-ish early policy, no eval): **MPS + 8 subproc 1,660 sps** → 100k ≈ 1 min, 250k ≈ 2.5 min; CPU + 8 subproc 347 sps. Full runs: TBD (Stage 1) |
 | PPO-LSTM | 0.3–0.5× PPO | 5–20 min | 10–40 min | 25–90 min | TBD (Stage 3) |
 | DQN (train_freq 4) | 100–300 sps | 3–8 min | 6–17 min | 14–42 min | TBD (Stage 3) |
 | DreamerV3 size1m, ratio 32 | t_update 0.3–1.5 s | 0.2–0.8 h | 0.3–1.5 h | 0.8–3.5 h | TBD (Stage 2) |
@@ -334,7 +336,7 @@ ECE1508_RL_Project/
 | T02 | Dreamer venv (CPU jax 0.4.33, numpy<2, deps minus CUDA/ALE) + pinned submodule | requirements-dreamer + lock, debug run log | – | 2–4 h | yes, with T01 | done | Kevin |
 | T03 | `CrafterTask` wrapper + seed pools + determinism test | `rlproj/envs`, tests | T01 | 3–5 h | – | done | Kevin |
 | T04 | Random baseline + env sps benchmark | `results/stage0/random.csv`, target choice | T03 | 2 h | – | done (sps to re-time idle) | Kevin |
-| T05 | CPU vs MPS PPO benchmark | device decision | T01 | 1 h | yes | todo | |
+| T05 | CPU vs MPS PPO benchmark | device decision | T01 | 1 h | yes | done (mps + subproc) | Kevin |
 | T06 | Eval harness + adapter protocol + CSV schema + Wilson CI | `rlproj/eval`, tests | T03 | 4–6 h | – | todo | |
 | T07 | `train_sb3.py` + PPO config + checkpointing | PPO run | T06 | 3–4 h | – | todo | |
 | T08 | PPO 100k run + eval → **first result** | `results/ppo_cnn`, plot | T07, T09 | 0.5 day | – | todo | |
@@ -388,6 +390,33 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-04 — T05 — MacBook Pro M2 Max
+- **Completed:** T05.
+  - `scripts/bench_device.py` and `configs/stage0_bench_device.yaml`. SB3 PPO `CnnPolicy` with the rl-zoo `atari` hyperparameters (checked in `hyperparams/ppo.yml`): 8 envs, n_steps 128, 4 epochs, batch 256, lr 2.5e-4, clip 0.1, vf 0.5, ent 0.01. For timing I used constant lr/clip instead of the linear schedules and no frame stack.
+  - Grid: {cpu, mps} × {DummyVecEnv, SubprocVecEnv} × 2 repeats, interleaved. 20,480 steps (20 iterations) per run, with the world cache warmed first.
+  - A callback splits each iteration into rollout and update time, with `torch.mps.synchronize()` at each timestamp (MPS is async).
+  - Outputs: `results/stage0/bench_device/{bench_device.csv, meta.json}`. Commit `24ccf5b`, clean. Total 471 s.
+- **Measurements (provisional: load avg 3.4 at start, up to 7 during runs):**
+
+  | Device / vec env | sps (mean of 2) | Rollout s / run | Update s / run |
+  |---|---|---|---|
+  | cpu / dummy | 292 | 17.0 | 53.1 |
+  | cpu / subproc | 347 | 5.8 | 53.2 |
+  | mps / dummy | 848 | 21.3 | 2.9 |
+  | **mps / subproc** | **1,660** | 9.6 | 2.8 |
+
+  - Repeats agree within 1%. The first MPS iteration costs ~0.6–1.4 s (warm-up).
+  - On CPU the PPO update dominates: 2.66 s per iteration, i.e. 16 gradient steps (1,024 samples / batch 256 × 4 epochs) at ~166 ms each, with 8 torch threads. On MPS it is 0.14 s (~9 ms per step), **~19× faster**.
+  - Rollout is slower on MPS than CPU: per-step inference on 8 observations has GPU-sync overhead.
+  - Losses are identical across repeats on the same device (deterministic given the seed); CPU and MPS differ slightly, as expected.
+  - Learning: n/a (timing only).
+- **Decision:** PPO-CNN runs on **`device="mps"` with `SubprocVecEnv`**. At this throughput a 100k-step PPO run is ~1 min of training (eval overhead not included), well under the §5 guesses.
+- **Issues / open items:**
+  - With MPS, rollout is now ~75% of PPO wall-clock. More envs (e.g. 16) might amortize inference; try it in T07 if it matters.
+  - DQN and RecurrentPPO have different batch shapes; benchmark the device again in T13/T14.
+  - Re-time on an idle machine before quoting any of this.
+- **Next:** T06 (eval harness), T07 (`train_sb3.py` + PPO config). T10 can start in parallel.
 
 ### 2026-11-04 — world cache — MacBook Pro M2 Max
 - **Completed:** per-process world cache in `CrafterTask` (`_DeterministicCrafterEnv.reset`, `cache_worlds=True` by default), as proposed in the T04 entry.
