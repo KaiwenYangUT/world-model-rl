@@ -7,3 +7,4 @@ stable-baselines3==2.9.2
 sb3-contrib==2.9.2
 crafter==1.8.3
 gymnasium==1.4.0
+matplotlib==3.11.2  # plots/ (T09)
