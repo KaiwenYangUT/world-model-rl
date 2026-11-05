@@ -13,7 +13,7 @@
   3. T15 + T16 proper: held-out trajectories for RQ3.
   4. Step-indexed DreamerV3 checkpoints (upstream keeps only the latest), so harness learning curves exist for Dreamer too.
   5. Re-time on an idle machine.
-- **Still running when this was written:** DreamerV3 ratio 32 seeds 1–2 and ratio 64 seed 0 (one at a time). The newest progress-log entry says what finished.
+- **Nothing is running.** All overnight runs finished by 03:45 on 2026-11-05.
 - **Blockers:** none. **All timings tonight are provisional** (several jobs shared the machine; load avg up to ~100), per CONTRIBUTING.md rule 5.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
@@ -36,7 +36,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
 | PPO-LSTM | 3 | 45.0% [39.5, 50.7] | 40.3% [34.9, 46.0] | +4.7 | 3.75 | pass |
 | DQN | 3 | 16.3% [12.6, 20.9] | 17.7% [13.8, 22.4] | −1.3 | 2.42 | pass (barely; seed-dependent) |
 | DQN 3-step (try 2) | 3 | 47.0% [41.4, 52.7] | 37.0% [31.7, 42.6] | +10.0 | 3.88 | pass |
-| DreamerV3 size1m, ratio 32, 100k | 2 (+1 queued) | 4.0% [1.6, 9.8] (harness, latest ckpts ≈ 96k / 70k, n=100) | 2.0% [0.6, 7.0] | +2.0 | 1.35 | "completing": pass; learning: no |
+| DreamerV3 size1m, ratio 32, 100k | 3 | 4.7% [2.3, 9.3] (harness, latest ckpts ≈ 96k / 70k / 79k, n=150) | 2.7% [1.0, 6.7] | +2.0 | 1.37 | "completing": pass; learning: no |
 | DreamerV3 size1m, **ratio 64**, 100k | 1 | 2.0% (harness, latest ckpt ≈ 85k, n=50) | 6.0% | – | 0.56 | "completing": pass; learning: no |
 | PPO, **sparse reward** (ablation) | 3 | **96.0%** [93.1, 97.7] | 82.3% [77.6, 86.2] | +13.7 | – | – |
 
@@ -45,7 +45,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
   - PPO-LSTM is slower and lower (45%).
   - DQN is slow and seed-dependent: one seed stays at random level, one reaches ~50% after 150k.
   - 3-step returns plus longer exploration (DQN try 2) raise DQN to 47% (3 seeds), close to PPO-LSTM.
-  - DreamerV3 at size1m and train ratio 32 does not learn a policy in 100k steps.
+  - DreamerV3 at size1m does not learn a policy in 100k steps at train ratio 32 (3 seeds) or 64 (1 seed).
 - **RQ2 (generalization):**
   - Held-out success is lower than train for PPO (+10 pp gap, CIs barely overlap), DQN 3-step (+10, CIs barely overlap), PPO-LSTM (+4.7), and sparse-reward PPO (+13.7, CIs disjoint).
   - The gap opens after ~100k steps (`figures/main_learning_curves_train_heldout.png`).
@@ -401,7 +401,7 @@ ECE1508_RL_Project/
 | T08 | PPO 100k run + eval → **first result** | `results/ppo_cnn`, plot | T07, T09 | 0.5 day | – | done (250k × 3 seeds) | Kevin |
 | T09 | ★ Plotting scripts against the §7 schema (start with fake CSVs) | `plots/*.py` | schema only | 4–6 h | **yes** | done (first version) | Kevin |
 | T10 | Dreamer launcher registering `CrafterTask`; size1m 2k-step smoke | `train_dreamer.py` | T02, T03 | 4–6 h | yes, with T06–T08 | done | Kevin |
-| T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | done (seed 0; seeds 1–2 and ratio 64 running) | Kevin |
+| T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | done (ratio 32 × 3 seeds, ratio 64 × 1 seed) | Kevin |
 | T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | done (final checkpoint only; eval reproducible byte for byte) | Kevin |
 | T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-state adapter test in `tests/test_sb3_adapter.py`) | Kevin |
 | T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds + 3-step variant) | Kevin |
@@ -450,6 +450,25 @@ Newest entry first. Template:
 - Next: ...
 ```
 
+### 2026-11-05 (early morning) — overnight runs, continued — MacBook Pro M2 Max
+- **Completed after the entry below:**
+  - DQN 3-step × 3 seeds.
+  - T12 DreamerV3 harness adapter (`rlproj/adapters/dreamer.py`, `scripts/eval_dreamer.py`; byte-identical on re-run).
+  - DreamerV3 ratio 32 seeds 1–2 and ratio 64 seed 0, each harness-scored.
+  - T13 adapter tests (30 tests total).
+  - README (T19).
+  - PPO at 1M steps (budget/literature check).
+- **Measurements:**
+  - DQN 3-step 47.0% / 37.0% (3 seeds).
+  - DreamerV3 r32 4.7% / 2.7% (3 seeds, harness); r64 2% / 6% (1 seed; 2.35 h wall).
+  - PPO 1M: 94% / 87% final; paper-style 72.9% vs 66.1% (Crafter paper).
+  - RQ3: unlock recall 0 at every horizon for all 3 r32 seeds; r64's posterior catches 5% of unlocks.
+- **Issues / open items:**
+  - Two DreamerV3 runs in parallel oversubscribe the CPU (load avg ~100), so run them one at a time.
+  - Upstream saves only every 30 min and keeps one checkpoint, so DreamerV3 "final" checkpoints sit at 70–96k of 100k.
+  - Shell gotcha: the Bash tool runs zsh, which does not word-split unquoted `$var`. A queued job silently waited on a wrong path for 30 min until fixed.
+- **Next:** review; decide the Stage 4 plan (see Current status); re-time on an idle machine.
+
 ### 2026-11-04 (night) — overnight runs — MacBook Pro M2 Max
 - **Completed:**
   - **T06** eval harness:
@@ -469,7 +488,7 @@ Newest entry first. Template:
   - **T10/T11** DreamerV3:
     - `rlproj/envs/embodied_crafter.py` + `scripts/train_dreamer.py`: official DreamerV3 on CrafterTask via a wrapped `train_eval`. Upstream is unmodified for training; eval env 0 uses the train pool, env 1 the held-out pool.
     - `scripts/dreamer_results.py` converts its logs.
-    - size1m, ratio 32, 100k: seed 0 done. Seeds 1–2 and a ratio-64 run are queued sequentially.
+    - size1m, ratio 32, 100k: 3 seeds; ratio 64: 1 seed. All harness-scored at their latest checkpoint (T12, added later that night).
   - **T16 (preliminary):**
     - Patched `Agent.report` to emit per-horizon open-loop reward/continuation errors (`third_party/patches/dreamerv3-report-wm-horizon.patch`, recorded in PATCHES.md).
     - `scripts/wm_eval.py` evaluates a checkpoint on its replay buffers.
