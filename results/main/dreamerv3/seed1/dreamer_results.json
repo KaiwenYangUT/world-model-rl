@@ -1,0 +1,15 @@
+{
+  "eval_source": "dreamerv3 train_eval in-loop eval driver (not the shared harness; T12 pending)",
+  "n_train_envs": 4,
+  "n_train_episodes": 584,
+  "n_eval_rounds": 6,
+  "eval_episodes_per_round": [
+    20,
+    20,
+    20,
+    20,
+    20,
+    20
+  ],
+  "last_global_env_steps": 99228
+}

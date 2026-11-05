@@ -2,10 +2,11 @@
 
     .venv-sb3/bin/python scripts/dreamer_results.py --config configs/dreamer_size1m_r32_100k.yaml --seed 0
 
-PRELIMINARY / NOT THE SHARED HARNESS: until the Dreamer checkpoint adapter (T12) exists, the
-eval rows come from upstream's in-loop eval driver (`train_eval`, sampling policy, mode='eval')
-on our CrafterTask envs: eval env 0 on the train pool, env 1 on the held-out pool, world seeds
-sampled by the env (not the harness's fixed list). Upstream triggers eval rounds on wall time,
+PRELIMINARY / NOT THE SHARED HARNESS: these learning-curve rows come from upstream's in-loop
+eval driver (`train_eval`, sampling policy, mode='eval') on our CrafterTask envs: eval env 0
+on the train pool, env 1 on the held-out pool, world seeds sampled by the env (not the
+harness's fixed list). scripts/eval_dreamer.py (T12) scores the final checkpoint with the
+shared harness. Upstream triggers eval rounds on wall time,
 so each round's env-step count is interpolated from the train envs' own step counters
 (the driver steps all train envs in lockstep, so global steps ~= n_train_envs x env steps).
 
@@ -105,7 +106,7 @@ def main():
         write_rows(os.path.join(out_dir, "eval.csv"), rows, "eval")
         write_rows(os.path.join(out_dir, "eval_episodes.csv"), episodes, list(episodes[0]))
     summary = {"eval_source": "dreamerv3 train_eval in-loop eval driver (not the shared "
-                              "harness; T12 pending)",
+                              "harness; scripts/eval_dreamer.py scores the final checkpoint)",
                "n_train_envs": n_train_envs, "n_train_episodes": len(train),
                "n_eval_rounds": len(rounds),
                "eval_episodes_per_round": [len(r) for r in rounds],
