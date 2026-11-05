@@ -397,7 +397,7 @@ ECE1508_RL_Project/
 | T16 | ★ `wm_eval` patch + script + plot | `wm_error.csv`, figure | T10 (any checkpoint), T15 | 1 day | **yes** | in progress (preliminary: on replay buffers, not T15 trajectories) | Kevin |
 | T17 | ★ Demo GIF tool (incl. Dreamer imagined-vs-real) | `make_demo.py` | T06 | 4 h | **yes** | todo | |
 | T18 | ★ TA update note (§10) | email text | T04 | 1 h | **yes** | todo | |
-| T19 | ★ README with exact reproduction commands (kept current) | `README.md` | ongoing | ongoing | **yes** | todo | |
+| T19 | ★ README with exact reproduction commands (kept current) | `README.md` | ongoing | ongoing | **yes** | in progress (first version 2026-11-05) | Kevin |
 | T20 | Stage 4 main runs (4 methods × 3 seeds) | `results/main` | T08, T11–T14, gate | 1–2 weeks of nights | split by machine | todo | |
 | T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | in progress (PPO × 3 seeds done; DreamerV3 todo) | Kevin |
 | T22 | ★ Report skeleton + related work | report draft | – | ongoing | **yes** | todo | |
