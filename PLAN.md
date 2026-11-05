@@ -391,7 +391,7 @@ ECE1508_RL_Project/
 | T10 | Dreamer launcher registering `CrafterTask`; size1m 2k-step smoke | `train_dreamer.py` | T02, T03 | 4–6 h | yes, with T06–T08 | done | Kevin |
 | T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | done (seed 0; seeds 1–2 and ratio 64 running) | Kevin |
 | T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | todo | |
-| T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-adapter unit test still todo) | Kevin |
+| T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-state adapter test in `tests/test_sb3_adapter.py`) | Kevin |
 | T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds + 3-step variant) | Kevin |
 | T15 | ★ Held-out trajectory collector | `collect_heldout.py` + npz | T12 | 3–4 h | **yes** | todo | |
 | T16 | ★ `wm_eval` patch + script + plot | `wm_error.csv`, figure | T10 (any checkpoint), T15 | 1 day | **yes** | in progress (preliminary: on replay buffers, not T15 trajectories) | Kevin |
@@ -483,7 +483,7 @@ Newest entry first. Template:
   - RQ3 uses replay buffers. The eval buffer mixes train and held-out worlds and has no split label. Proper T15 trajectories are still needed.
   - DreamerV3's `train_eval` saves checkpoints only every 30 min, so the latest checkpoint can lag the end of training (the seed-0 one is at ~96k of 100k).
   - Upstream `report()` bug noted in PATCHES.md (`mets.update(mets)`); left unchanged.
-  - The PPO-LSTM recurrent-adapter unit test (T13) is not written yet.
+  - T13's recurrent-adapter test is now done: `tests/test_sb3_adapter.py` checks state carry-over, per-slot reset on `first`, and seeded sampling; DQN ε rate is checked too. 30 tests in total.
   - No timing numbers are fit to quote (rule 5).
 - **Next:**
   - Review results.
