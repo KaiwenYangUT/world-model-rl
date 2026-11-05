@@ -1,0 +1,92 @@
+{
+  "started": "2026-11-05T02:26:27-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-dreamer/bin/python",
+    "scripts/wm_eval.py",
+    "--config",
+    "configs/dreamer_size1m_r64_100k.yaml",
+    "--seed",
+    "0",
+    "--batches",
+    "64"
+  ],
+  "config_path": "configs/dreamer_size1m_r64_100k.yaml",
+  "config": {
+    "exp": "main",
+    "method": "dreamerv3_r64",
+    "env": {
+      "target": "place_table",
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "dreamer_flags": {
+      "configs": [
+        "crafter",
+        "size1m"
+      ],
+      "run.steps": 100000,
+      "run.train_ratio": 64,
+      "run.envs": 4,
+      "run.eval_envs": 2,
+      "run.eval_eps": 20,
+      "run.report_every": 900,
+      "run.save_every": 1800,
+      "run.log_every": 120,
+      "replay.size": 100000,
+      "jax.platform": "cpu",
+      "jax.compute_dtype": "float32",
+      "logger.outputs": [
+        "jsonl"
+      ]
+    }
+  },
+  "git": {
+    "commit": "c5790f8c44653c7f562772cf8b46bf5878c2fffd",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "cpu (jax)",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "1.26.4",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "jax": "0.4.33",
+    "jaxlib": "0.4.33"
+  },
+  "load_avg_start": [
+    10.12939453125,
+    9.84375,
+    9.59814453125
+  ],
+  "seed": 0,
+  "finished": "2026-11-05T02:26:57-05:00",
+  "wall_clock_s": 29.23,
+  "load_avg_end": [
+    11.00244140625,
+    10.00439453125,
+    9.6591796875
+  ],
+  "checkpoint": "/Users/kevinyang/Desktop/ECE1508_RL_Project/runs/main/dreamerv3_r64/seed0/logdir/ckpt/20261105T020538F524720",
+  "checkpoint_name": "20261105T020538F524720",
+  "sources": {
+    "replay": {
+      "replay_items": 85040,
+      "batches": 64
+    },
+    "eval_replay": {
+      "replay_items": 10000,
+      "batches": 64
+    }
+  },
+  "note": "preliminary: replay buffers, not T15 held-out trajectories"
+}

@@ -37,6 +37,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
 | DQN | 3 | 16.3% [12.6, 20.9] | 17.7% [13.8, 22.4] | −1.3 | 2.42 | pass (barely; seed-dependent) |
 | DQN 3-step (try 2) | 3 | 47.0% [41.4, 52.7] | 37.0% [31.7, 42.6] | +10.0 | 3.88 | pass |
 | DreamerV3 size1m, ratio 32, 100k | 2 (+1 queued) | 4.0% [1.6, 9.8] (harness, latest ckpts ≈ 96k / 70k, n=100) | 2.0% [0.6, 7.0] | +2.0 | 1.35 | "completing": pass; learning: no |
+| DreamerV3 size1m, **ratio 64**, 100k | 1 | 2.0% (harness, latest ckpt ≈ 85k, n=50) | 6.0% | – | 0.56 | "completing": pass; learning: no |
 | PPO, **sparse reward** (ablation) | 3 | **96.0%** [93.1, 97.7] | 82.3% [77.6, 86.2] | +13.7 | – | – |
 
 - **RQ1 (learning efficiency):**
@@ -55,6 +56,11 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
   - **But the reward head never predicts an achievement unlock** (|r̂| > 0.5): recall is 0 at every horizon, including the posterior, although 1.5% of replay steps are unlocks. Replicated on seed 1, whose in-training `report/wm/` logs show unlock recall 0 at 13k, 52k, and 92k steps while posterior reward MAE falls 0.13 → 0.04.
   - Reward MAE on reward steps is ~0.4–0.6, and terminal recall is 0.
   - Likely link to RQ1: the actor learns only from imagined rewards, which never contain the +1 unlocks.
+- **DreamerV3 at train ratio 64** (1 seed, 2.35 h):
+  - Slightly better world model: reward loss 0.20 vs 0.26; the posterior now catches 5% of unlocks (precision 0.85).
+  - Open-loop unlock recall is still 0.
+  - The policy is still at random level (2% / 6%).
+  - So doubling the ratio is not enough at 100k steps. Candidates: a larger model (size12m+), ratio ≥ 128, a longer budget, or the sparse reward (see the PPO ablation).
 - **Reward ablation:** with the target-only sparse reward PPO reaches 96% train / 82% held-out, against 62% / 52% with the standard reward. Optimizing exactly the measured target helps a lot, but the generalization gap grows.
 - **Caveats:**
   - DreamerV3's final numbers now come from the shared harness on its final checkpoint (T12, `scripts/eval_dreamer.py`; upstream keeps only the latest checkpoint). Its learning curve is still the in-loop eval (randomly sampled worlds, ~10 episodes per split per round).
