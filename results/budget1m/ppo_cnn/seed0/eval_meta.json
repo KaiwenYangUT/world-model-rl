@@ -1,0 +1,89 @@
+{
+  "started": "2026-11-05T02:48:31-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-sb3/bin/python",
+    "scripts/train_sb3.py",
+    "--config",
+    "configs/ppo_cnn_1m.yaml",
+    "--seed",
+    "0"
+  ],
+  "config_path": "configs/ppo_cnn_1m.yaml",
+  "config": {
+    "exp": "budget1m",
+    "method": "ppo_cnn",
+    "algo": "PPO",
+    "policy": "CnnPolicy",
+    "total_steps": 1000000,
+    "n_envs": 8,
+    "vec_env": "subproc",
+    "device": "mps",
+    "warm_cache": true,
+    "env": {
+      "target": "place_table",
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "algo_kwargs": {
+      "n_steps": 128,
+      "n_epochs": 4,
+      "batch_size": 256,
+      "learning_rate": 0.00025,
+      "clip_range": 0.1,
+      "vf_coef": 0.5,
+      "ent_coef": 0.01
+    },
+    "eval": {
+      "every": 50000,
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "policy": "sample",
+      "device": "cpu",
+      "workers": 8,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    }
+  },
+  "git": {
+    "commit": "c11ef0c2481ad7cec3a02b1f7cfc0c73c30b493c",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "cpu",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "2.4.6",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "torch": "2.15.0",
+    "stable_baselines3": "2.9.2",
+    "sb3_contrib": "2.9.2"
+  },
+  "load_avg_start": [
+    12.87060546875,
+    12.41015625,
+    11.35791015625
+  ],
+  "seed": 0,
+  "finished": "2026-11-05T02:50:50-05:00",
+  "wall_clock_s": 139.14,
+  "load_avg_end": [
+    20.7001953125,
+    15.7822265625,
+    12.853515625
+  ],
+  "n_checkpoints": 21,
+  "eval_wall_clock_s": 139.05
+}

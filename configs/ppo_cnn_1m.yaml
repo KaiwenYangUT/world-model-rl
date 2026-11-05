@@ -1,0 +1,39 @@
+# Budget check: PPO CnnPolicy at 1M steps, to compare with the Crafter paper (arXiv 2109.06780,
+# PPO at 1M: collect_wood 83.0%, place_table 66.1%, make_wood_pickaxe 21.1%). Same as ppo_cnn_250k
+# except total_steps and eval.every.
+#   .venv-sb3/bin/python scripts/train_sb3.py --config configs/ppo_cnn_1m.yaml --seed 0
+exp: budget1m
+method: ppo_cnn
+algo: PPO
+policy: CnnPolicy
+total_steps: 1000000
+n_envs: 8
+vec_env: subproc
+device: mps               # T05: mps + subproc is fastest for PPO CnnPolicy
+warm_cache: true          # fill the world cache in every env before training (timed separately)
+
+env:
+  target: place_table
+  reward_mode: crafter
+  length: 10000
+
+# rl-baselines3-zoo hyperparams/ppo.yml `atari` block, with constant lr / clip instead of its
+# linear schedules and no frame stack (memory is what PPO-LSTM adds).
+algo_kwargs:
+  n_steps: 128
+  n_epochs: 4
+  batch_size: 256
+  learning_rate: 2.5e-4
+  clip_range: 0.1
+  vf_coef: 0.5
+  ent_coef: 0.01
+
+eval:
+  every: 50000            # checkpoint interval in env steps (also step 0)
+  n_episodes: 50          # per split; PLAN.md says 20, raised because CIs at n=20 are very wide
+  n_envs: 8               # parallel episodes per evaluate() call
+  rng_seed: 1234          # fixed: same worlds and action-sampling seed for every checkpoint
+  policy: sample
+  device: cpu             # small-batch inference is faster on cpu (T05 rollout times)
+  workers: 8              # checkpoints evaluated in parallel processes
+  splits: [train, heldout]

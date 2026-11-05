@@ -61,6 +61,12 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
   - Open-loop unlock recall is still 0.
   - The policy is still at random level (2% / 6%).
   - So doubling the ratio is not enough at 100k steps. Candidates: a larger model (size12m+), ratio ≥ 128, a longer budget, or the sparse reward (see the PPO ablation).
+- **Sanity check against the literature: PPO at 1M steps** (1 seed, `configs/ppo_cnn_1m.yaml`, `results/budget1m/`; 18 min training).
+  - Harness eval of the final checkpoints: place_table 94% train / 87% held-out, collect_wood 100%, make_wood_pickaxe 74–78%.
+  - Paper-style metric (success over all 5,151 training episodes in the budget, as the Crafter paper reports it): collect_wood 86.4% / place_table 72.9% / make_wood_pickaxe 40.1%, vs the paper's PPO at 1M of 83.0 / 66.1 / 21.1%.
+  - So our PPO pipeline is on par or slightly better.
+  - Possible reasons (guess): SB3 Atari hyperparameters; our 50-world training pool vs fresh worlds every episode in the paper.
+  - At 1M steps the generalization gap persists (+7 pp on place_table).
 - **Reward ablation:** with the target-only sparse reward PPO reaches 96% train / 82% held-out, against 62% / 52% with the standard reward. Optimizing exactly the measured target helps a lot, but the generalization gap grows.
 - **Caveats:**
   - DreamerV3's final numbers now come from the shared harness on its final checkpoint (T12, `scripts/eval_dreamer.py`; upstream keeps only the latest checkpoint). Its learning curve is still the in-loop eval (randomly sampled worlds, ~10 episodes per split per round).
