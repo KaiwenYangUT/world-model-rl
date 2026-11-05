@@ -29,13 +29,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from rlproj.envs.crafter_task import SPLITS, make_env  # noqa: E402
 from rlproj.eval.metrics import wilson_ci  # noqa: E402
 from rlproj.utils.config import load_config  # noqa: E402
+from rlproj.utils.csvlog import EVAL_COLUMNS  # noqa: E402
 from rlproj.utils.meta import RunMeta  # noqa: E402
 
 ACHIEVEMENTS = tuple(crafter.constants.achievements)
 N_ACTIONS = len(crafter.constants.actions)
-EVAL_COLUMNS = ("exp, method, seed, ckpt_env_steps, wall_clock_s, split, n_episodes, success_rate, "
-                "success_ci_lo, success_ci_hi, mean_return, mean_len, mean_steps_to_success, "
-                "target, reward_mode").split(", ")
 
 
 def run_episode(env_cfg, seed, split, index):
