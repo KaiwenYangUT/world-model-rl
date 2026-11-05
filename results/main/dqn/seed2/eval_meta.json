@@ -1,0 +1,96 @@
+{
+  "started": "2026-11-04T22:51:30-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-sb3/bin/python",
+    "scripts/train_sb3.py",
+    "--config",
+    "configs/dqn_250k.yaml",
+    "--seed",
+    "2"
+  ],
+  "config_path": "configs/dqn_250k.yaml",
+  "config": {
+    "exp": "main",
+    "method": "dqn",
+    "algo": "DQN",
+    "policy": "CnnPolicy",
+    "total_steps": 250000,
+    "n_envs": 1,
+    "vec_env": "dummy",
+    "device": "mps",
+    "warm_cache": true,
+    "env": {
+      "target": "place_table",
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "algo_kwargs": {
+      "buffer_size": 100000,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "learning_starts": 10000,
+      "target_update_interval": 1000,
+      "train_freq": 4,
+      "gradient_steps": 1,
+      "exploration_fraction": 0.1,
+      "exploration_final_eps": 0.01,
+      "optimize_memory_usage": true,
+      "replay_buffer_kwargs": {
+        "handle_timeout_termination": false
+      }
+    },
+    "eval": {
+      "every": 10000,
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "policy": "epsilon",
+      "epsilon": 0.05,
+      "device": "cpu",
+      "workers": 8,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    }
+  },
+  "git": {
+    "commit": "7f633405f21e68db393455c02092434a31f29981",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "cpu",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "2.4.6",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "torch": "2.15.0",
+    "stable_baselines3": "2.9.2",
+    "sb3_contrib": "2.9.2"
+  },
+  "load_avg_start": [
+    27.1572265625,
+    24.8134765625,
+    23.11865234375
+  ],
+  "seed": 2,
+  "finished": "2026-11-04T22:55:01-05:00",
+  "wall_clock_s": 211.5,
+  "load_avg_end": [
+    90.57568359375,
+    45.92626953125,
+    31.8359375
+  ],
+  "n_checkpoints": 26,
+  "eval_wall_clock_s": 211.32
+}

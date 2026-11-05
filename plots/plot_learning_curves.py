@@ -126,21 +126,26 @@ def main():
                 steps, table = curve(per_seed, 1 if is_return else 0)
                 n = len(per_seed)
                 tag = "" if len(splits) == 1 else (" train" if split == "train" else " held-out")
-                draw(ax, steps, table, color, ls, f"{name}{tag} (n={n} seed{'s' * (n > 1)})")
+                note = " [in-loop eval]" if method.startswith("dreamerv3") else ""
+                draw(ax, steps, table, color, ls,
+                     f"{name}{tag} (n={n} seed{'s' * (n > 1)}){note}")
         ref = rand_ret if is_return else rand_succ.get(target, 0.0)
-        ax.axhline(ref, color=RANDOM, linestyle=":", linewidth=1.5,
-                   label=f"random policy ({ref:.2f})" if is_return else
-                   f"random policy ({ref:.1%})")
+        ax.axhline(ref, color=RANDOM, linestyle=":", linewidth=1.5, label="random policy")
+        ax.text(1.0, ref, f" {ref:.2f}" if is_return else f" {ref:.1%}", color=RANDOM,
+                fontsize=7.5, va="bottom", ha="right", transform=ax.get_yaxis_transform())
         if not is_return:
             ax.set_ylim(0, max(0.05, ax.get_ylim()[1]))
             ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-        ax.legend(fontsize=7.5, frameon=False, labelcolor=INK_2, loc="upper left")
     worlds = " + ".join({"train": "train worlds", "heldout": "held-out worlds (dashed)"}[s]
                         for s in splits)
     fig.suptitle(f"Crafter ({args.exp}) — eval on {worlds}, 50 episodes per checkpoint; line = "
                  "mean over seeds, band = min..max",
                  x=0.01, ha="left", fontsize=10, color=INK_2)
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    handles, labels = axes.flat[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=min(4, len(labels)), fontsize=8.5,
+               frameon=False, labelcolor=INK_2)
+    rows = -(-len(labels) // 4)
+    fig.tight_layout(rect=(0, 0.035 * rows + 0.01, 1, 0.96))
     os.makedirs(os.path.join(REPO_ROOT, "figures"), exist_ok=True)
     suffix = "" if splits == ["train"] else "_" + "_".join(splits)
     out = os.path.join(REPO_ROOT, "figures", f"{args.exp}_learning_curves{suffix}.png")
