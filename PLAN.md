@@ -10,8 +10,8 @@
 - **Next action:**
   1. Read the preliminary results and decide the Stage 4 budget and settings.
   2. DreamerV3 policy learning: the ratio-64 run decides whether more updates help (see results).
-  3. T12: DreamerV3 harness adapter, so Dreamer's eval comes from the shared harness.
-  4. T15 + T16 proper: held-out trajectories for RQ3.
+  3. T15 + T16 proper: held-out trajectories for RQ3.
+  4. Step-indexed DreamerV3 checkpoints (upstream keeps only the latest), so harness learning curves exist for Dreamer too.
   5. Re-time on an idle machine.
 - **Still running when this was written:** DreamerV3 ratio 32 seeds 1–2 and ratio 64 seed 0 (one at a time). The newest progress-log entry says what finished.
 - **Blockers:** none. **All timings tonight are provisional** (several jobs shared the machine; load avg up to ~100), per CONTRIBUTING.md rule 5.
@@ -36,7 +36,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
 | PPO-LSTM | 3 | 45.0% [39.5, 50.7] | 40.3% [34.9, 46.0] | +4.7 | 3.75 | pass |
 | DQN | 3 | 16.3% [12.6, 20.9] | 17.7% [13.8, 22.4] | −1.3 | 2.42 | pass (barely; seed-dependent) |
 | DQN 3-step (try 2) | 3 | 47.0% [41.4, 52.7] | 37.0% [31.7, 42.6] | +10.0 | 3.88 | pass |
-| DreamerV3 size1m, ratio 32, 100k | 1 | ~5% (in-loop eval, n≈20) | ~0% | – | 1.42 | "completing": pass; learning: no |
+| DreamerV3 size1m, ratio 32, 100k | 1 | 0.0% [0.0, 7.1] (harness, final ckpt ≈ 96k, n=50) | 2.0% [0.4, 10.5] | −2.0 | 1.34 | "completing": pass; learning: no |
 | PPO, **sparse reward** (ablation) | 3 | **96.0%** [93.1, 97.7] | 82.3% [77.6, 86.2] | +13.7 | – | – |
 
 - **RQ1 (learning efficiency):**
@@ -57,7 +57,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
   - Likely link to RQ1: the actor learns only from imagined rewards, which never contain the +1 unlocks.
 - **Reward ablation:** with the target-only sparse reward PPO reaches 96% train / 82% held-out, against 62% / 52% with the standard reward. Optimizing exactly the measured target helps a lot, but the generalization gap grows.
 - **Caveats:**
-  - DreamerV3's numbers come from its in-loop eval driver (randomly sampled worlds, ~10 episodes per split per round), not the shared harness (T12).
+  - DreamerV3's final numbers now come from the shared harness on its final checkpoint (T12, `scripts/eval_dreamer.py`; upstream keeps only the latest checkpoint). Its learning curve is still the in-loop eval (randomly sampled worlds, ~10 episodes per split per round).
   - RQ3 uses replay buffers (eval buffer mixes train and held-out worlds), not T15 trajectories.
   - DQN and the ablation follow rl-zoo Atari settings scaled to 250k, with no tuning.
   - Single machine, provisional timings.
@@ -390,7 +390,7 @@ ECE1508_RL_Project/
 | T09 | ★ Plotting scripts against the §7 schema (start with fake CSVs) | `plots/*.py` | schema only | 4–6 h | **yes** | done (first version) | Kevin |
 | T10 | Dreamer launcher registering `CrafterTask`; size1m 2k-step smoke | `train_dreamer.py` | T02, T03 | 4–6 h | yes, with T06–T08 | done | Kevin |
 | T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | done (seed 0; seeds 1–2 and ratio 64 running) | Kevin |
-| T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | todo | |
+| T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | done (final checkpoint only; eval reproducible byte for byte) | Kevin |
 | T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-state adapter test in `tests/test_sb3_adapter.py`) | Kevin |
 | T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds + 3-step variant) | Kevin |
 | T15 | ★ Held-out trajectory collector | `collect_heldout.py` + npz | T12 | 3–4 h | **yes** | todo | |

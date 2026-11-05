@@ -53,7 +53,7 @@ def random_reference():
 
 def summarize_method(exp, method):
     seed_dirs = sorted(glob.glob(os.path.join(REPO_ROOT, "results", exp, method, "seed*")))
-    episodes, curves, budget = [], defaultdict(dict), 0
+    episodes, curves, budget, sources = [], defaultdict(dict), 0, set()
     for d in seed_dirs:
         path = os.path.join(d, "eval_episodes.csv")
         if not os.path.exists(path):
@@ -61,16 +61,24 @@ def summarize_method(exp, method):
         seed = os.path.basename(d)
         eps = read_csv(path)
         ckpts = sorted({int(e["ckpt_env_steps"]) for e in eps})
-        budget = max(budget, ckpts[-1])
-        last2 = set(ckpts[-2:])
-        episodes += [dict(e, seed=seed) for e in eps if int(e["ckpt_env_steps"]) in last2]
+        harness = os.path.join(d, "eval_harness_episodes.csv")
+        if os.path.exists(harness):  # DreamerV3: shared-harness eval of the final checkpoint
+            final = read_csv(harness)
+            budget = max(budget, int(final[0]["ckpt_env_steps"]))
+            episodes += [dict(e, seed=seed) for e in final]
+            sources.add("harness, final ckpt")
+        else:
+            budget = max(budget, ckpts[-1])
+            last2 = set(ckpts[-2:])
+            episodes += [dict(e, seed=seed) for e in eps if int(e["ckpt_env_steps"]) in last2]
+            sources.add("harness, last 2 ckpts" if "dreamer" not in method else "in-loop eval")
         for c in ckpts:
             sel = [e for e in eps if int(e["ckpt_env_steps"]) == c and e["split"] == "train"]
             curves[seed][c] = np.mean([int(e[f"first_{TARGET}"]) >= 0 for e in sel])
     if not episodes:
         return None
     row = {"method": NAMES.get(method, method), "n_seeds": len(curves),
-           "budget_env_steps": budget}
+           "budget_env_steps": budget, "final_source": "; ".join(sorted(sources))}
     for split in ("train", "heldout"):
         eps = [e for e in episodes if e["split"] == split]
         k = sum(int(e[f"first_{TARGET}"]) >= 0 for e in eps)
