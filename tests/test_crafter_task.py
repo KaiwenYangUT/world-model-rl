@@ -17,6 +17,7 @@ from rlproj.envs.crafter_task import (
     HELDOUT_SEEDS,
     TRAIN_SEEDS,
     CrafterTask,
+    clear_world_cache,
     make_env,
 )
 
@@ -110,6 +111,39 @@ class TestDeterminism(unittest.TestCase):
         self.assertEqual(len(maps), len(seeds))
 
 
+class TestWorldCache(unittest.TestCase):
+
+    def test_cached_reset_matches_fresh_generation(self):
+        clear_world_cache()
+        long_actions = np.random.default_rng(11).integers(17, size=500)
+        fresh = CrafterTask(cache_worlds=False)
+        cached = CrafterTask()
+        for s in (0, 3, 7, 10000):
+            expected = fingerprint(fresh, s, long_actions)
+            self.assertEqual(fingerprint(cached, s, long_actions), expected, "cache miss")
+            self.assertEqual(fingerprint(cached, s, long_actions), expected, "cache hit")
+            self.assertEqual(fingerprint(cached, s, long_actions), expected, "second hit")
+            self.assertEqual(fingerprint(CrafterTask(), s, long_actions), expected,
+                             "hit from another instance")
+            np.testing.assert_array_equal(world_map(cached, s), world_map(fresh, s))
+
+    def test_restored_world_is_wired_to_this_env(self):
+        clear_world_cache()
+        CrafterTask().reset(options={"world_seed": 5})  # fills the cache from another env
+        env = CrafterTask()
+        env.reset(options={"world_seed": 5})
+        world, player = env._env._world, env._env._player
+        objs = world.objects
+        self.assertTrue(any(obj is player for obj in objs))
+        for obj in objs:
+            self.assertIs(obj.world, world)
+            self.assertIs(obj.random, world.random)
+            if hasattr(obj, "player"):
+                self.assertIs(obj.player, player)
+        # The env's views render this World, so it must be the same object as before.
+        self.assertIs(env._env._local_view._world, world)
+
+
 class TestSeedPools(unittest.TestCase):
 
     def test_pools(self):
@@ -196,6 +230,19 @@ class TestGymnasiumApi(unittest.TestCase):
     def test_check_env(self):
         env = CrafterTask(length=200)
         check_env(env, skip_render_check=True)
+
+    def test_gymnasium_vector_env_with_mixed_unlocks(self):
+        # Regression: first_unlock used None for "not yet", which AsyncVectorEnv could not
+        # stack once one sub-env had unlocked an achievement and another had not.
+        import gymnasium as gym
+        venv = gym.vector.SyncVectorEnv(
+            [lambda: CrafterTask(length=8), lambda: CrafterTask(length=8)],
+            autoreset_mode=gym.vector.AutoresetMode.SAME_STEP)
+        venv.reset(seed=0)
+        unlock_target_at(venv.envs[0], 2, "place_table")
+        for _ in range(10):  # crosses an autoreset at step 8
+            _, _, _, truncated, info = venv.step(np.zeros(2, dtype=np.int64))
+        self.assertEqual(info["first_unlock"]["place_table"].dtype.kind, "i")
 
     def test_spaces(self):
         env = CrafterTask()

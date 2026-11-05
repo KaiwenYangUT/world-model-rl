@@ -6,9 +6,9 @@
 
 ## Current status
 - **Date:** 2026-11-04
-- **Stage:** **Stage 0** (setup and baselines) on the MacBook Pro M2 Max. T00–T03 done (both venvs built; DreamerV3 `debug` runs on CPU; `CrafterTask` + 15 passing tests).
-- **Next action:** T04 (random baseline + env sps, idle machine) and T05 (CPU vs MPS). T06 (eval harness) is unblocked too.
-- **Blockers:** none. (gymnasium 1.4.0 added to `.venv-dreamer`; the T03 tests pass in both venvs.)
+- **Stage:** **Stage 0** (setup and baselines) on the MacBook Pro M2 Max. T00–T04 done. **Target = `place_table`** (random success 2.0% train / 4.5% held-out).
+- **Next action:** T05 (CPU vs MPS) and T06 (eval harness). `CrafterTask` now caches generated worlds: env throughput (warm cache) is 1,617 sps with 1 process and 6,181 sps with 8.
+- **Blockers:** none. The T04 env-sps numbers were taken with background load avg ≈ 3–4, so they are provisional (CONTRIBUTING.md rule 5); re-time on an idle machine before quoting them in the report.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
   - Results frozen: **Sun 2026-12-06**.
@@ -168,7 +168,7 @@ Our shared harness depends only on numpy, crafter, and gymnasium, so it runs in 
   - The same seed gives an identical first frame and an identical 100-step trajectory under fixed actions.
   - Random success is roughly consistent with the paper.
   - Dreamer prints `fps` and `train/loss/*`.
-- **Gate:** choose the target whose random success is non-zero and ≤ ~10% (expected `place_table`). If `place_table` is ≥ 20%, use `make_wood_pickaxe`.
+- **Gate:** choose the target whose random success is non-zero and ≤ ~10% (expected `place_table`). If `place_table` is ≥ 20%, use `make_wood_pickaxe`. **Result (T04, 2026-11-04): `place_table`** (2.0% train, 4.5% held-out, n=200 each).
 - **If slow or broken:**
   - JAX install fails → SheepRL XS.
   - Env < 300 sps → use 4 subprocess envs and fewer eval episodes.
@@ -333,7 +333,7 @@ ECE1508_RL_Project/
 | T01 | SB3 venv, py3.11 (torch, sb3, sb3-contrib, crafter, gymnasium) | requirements-sb3 + lock | – | 1–2 h | yes | done | Kevin |
 | T02 | Dreamer venv (CPU jax 0.4.33, numpy<2, deps minus CUDA/ALE) + pinned submodule | requirements-dreamer + lock, debug run log | – | 2–4 h | yes, with T01 | done | Kevin |
 | T03 | `CrafterTask` wrapper + seed pools + determinism test | `rlproj/envs`, tests | T01 | 3–5 h | – | done | Kevin |
-| T04 | Random baseline + env sps benchmark | `results/stage0/random.csv`, target choice | T03 | 2 h | – | todo | |
+| T04 | Random baseline + env sps benchmark | `results/stage0/random.csv`, target choice | T03 | 2 h | – | done (sps to re-time idle) | Kevin |
 | T05 | CPU vs MPS PPO benchmark | device decision | T01 | 1 h | yes | todo | |
 | T06 | Eval harness + adapter protocol + CSV schema + Wilson CI | `rlproj/eval`, tests | T03 | 4–6 h | – | todo | |
 | T07 | `train_sb3.py` + PPO config + checkpointing | PPO run | T06 | 3–4 h | – | todo | |
@@ -388,6 +388,86 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-04 — world cache — MacBook Pro M2 Max
+- **Completed:** per-process world cache in `CrafterTask` (`_DeterministicCrafterEnv.reset`, `cache_worlds=True` by default), as proposed in the T04 entry.
+  - The first reset on a world seed generates the world and stores a deep copy of the world state and player. Later resets restore a copy.
+  - Objects' `world` pointers are remapped to the env's own `World`, which the renderers hold. `world.random` is copied once, so all objects still share it.
+  - Recorded in `third_party/PATCHES.md`.
+- **Verification:**
+  - 2 new tests (18 total, all pass in both venvs, 27 s):
+    - 500-step fingerprints with cache off vs cache miss vs hit vs second hit vs hit from another instance (4 seeds) are identical;
+    - after restore, every object points at the env's World, shares `world.random`, and zombies/skeletons point at the env's player.
+  - Re-ran T04 with the cache. `random.csv` and `random_episodes.csv` are **byte-identical** to the uncached run.
+- **Measurements (provisional: load avg 3.3–4.5 from other apps):**
+  - Reset: **~490 ms → ~1.1 ms** on a cache hit. The first visit to each seed still costs ~0.5 s, so warming all 50 train seeds takes ~25 s per process, once.
+  - Env sps, random actions, warm cache (uncached T04 values in parentheses):
+
+    | Procs | sps |
+    |---|---|
+    | 1 | **1,617** (280) |
+    | 4 | **3,805** (311) |
+    | 8 | **6,181** (351) |
+
+  - Lockstep vector envs now scale, since resets no longer stall them.
+  - Memory: 150 cached worlds ≈ 37 MB RSS per process (33 KB/world pickled).
+  - T04 wall-clock 233 s → 133 s. The episode phase barely changed (38 → 32 s) because most of its world visits are first visits per worker.
+  - `env_sps.csv` gained `warmup_s` and `warm_cache` columns. Config: `sps.warm_cache: true`.
+- **Implication:** the env is no longer a bottleneck for model-free training (PPO's compute will dominate). The Stage 0 "< 300 sps" fallback no longer applies.
+- **Next:** T05 (CPU vs MPS), T06 (eval harness). Re-time env sps on an idle machine before quoting it.
+
+### 2026-11-04 — T04 — MacBook Pro M2 Max
+- **Completed:** T04.
+  - New code:
+    - `scripts/random_baseline.py` and `configs/stage0_random.yaml`;
+    - `rlproj/utils/config.py` (YAML via ruamel.yaml, a crafter dependency in both venvs);
+    - `rlproj/utils/meta.py` (meta.json: git hash + dirty flag, config, hardware, packages, load averages, wall-clock);
+    - `rlproj/eval/metrics.py` (`wilson_ci`, to be reused by T06).
+  - Episodes are deterministic and don't depend on the worker count. Episode i uses world seed `pool[i % len(pool)]` and action RNG `default_rng([seed, split, i])`.
+  - Outputs in `results/stage0/`:
+    - `random.csv` (§7 eval.csv schema, one row per split × achievement-as-target);
+    - `random_episodes.csv` (400 episodes, first-unlock step for all 22 achievements);
+    - `env_sps.csv`;
+    - `meta.json`.
+  - Run: `.venv-sb3/bin/python scripts/random_baseline.py --config configs/stage0_random.yaml`. 233 s total. Made from commit `c7f6ea5` + uncommitted changes (`dirty: true` in meta.json).
+- **Random baseline (200 episodes per split, 95% Wilson CI):**
+
+  | Achievement | Train (0–49) | Held-out (10000–10099) | Paper random (§2) |
+  |---|---|---|---|
+  | collect_wood | 21.0% [15.9, 27.2] | 21.5% [16.4, 27.7] | 24.4% |
+  | place_table | **2.0% [0.8, 5.0]** | **4.5% [2.4, 8.3]** | 4.4% |
+  | make_wood_pickaxe | 0.0% [0.0, 1.9] | 0.0% [0.0, 1.9] | 0.3% |
+  | collect_stone | 0.0% [0.0, 1.9] | 0.0% [0.0, 1.9] | 0.0% |
+
+  - Others (train / held-out):
+    - wake_up 96% / 94%;
+    - collect_sapling 50% / 52%;
+    - place_plant 48% / 48%;
+    - collect_drink 5.5% / 10.5%;
+    - eat_cow 0.5% / 0.5%.
+  - Mean return 1.32 / 1.40.
+  - Episode length: median 164 / 172 (p25–p75 149–186 / 154–192, max 282 / 371). **Every episode ended in death; none reached the 10k length limit.**
+  - Consistent with the paper. Train vs held-out CIs overlap, so for a random policy the "gap" is noise.
+- **Gate decision: target = `place_table`** (non-zero and ≤ 10% on both splits).
+  - Week-1 criterion (b), §6: PPO place_table success on train must be ≥ max(2×2.0%, 2.0% + 10 pp) = **12%**, with its Wilson lower bound above **5.0%**.
+- **Env throughput** (random actions, train pool; **provisional: load avg ≈ 3 from other apps**):
+
+  | Procs | sps (incl. resets) | Notes |
+  |---|---|---|
+  | 1 | 280 | step() alone = **1,652 sps**; 121 resets at **0.494 s each** = 60 s of the 71 s |
+  | 4 (AsyncVectorEnv) | 311 | startup 0.72 s (excluded) |
+  | 8 (AsyncVectorEnv) | 351 | startup 0.77 s (excluded) |
+
+  - **Reset (Python world generation, `crafter/worldgen.py`) is ~84% of env time for a random policy.** One reset costs as much as ~800 steps.
+  - Vectorized envs barely help: they step in lockstep, so any env's 0.5 s reset stalls all of them. The Stage 0 fallback "< 300 sps → 4 subprocess envs" therefore does not work here; 4 procs give +11%.
+  - Trained agents should survive longer, so they reset less often.
+  - Not checked: whether SB3 `SubprocVecEnv` behaves the same. It should, since it is also lockstep.
+- **Fix during T04:** `CrafterTask` `first_unlock` now uses `-1` (`NOT_UNLOCKED`) instead of `None`. gymnasium's AsyncVectorEnv crashed stacking mixed None/int infos (SB3 VecEnvs would not have). Added a regression test, which fails on the old code; 16/16 tests pass.
+- **Issues / open items:**
+  - **Possible speed-up (not done, needs a decision):** world seeds come from fixed pools (150 seeds), so `CrafterTask` could cache each seed's freshly generated world (map, objects, player, `world.random` state) and restore a copy on reset instead of regenerating. That would turn a 0.5 s reset into ~ms. It must keep the determinism tests passing.
+  - **Eval noise:** the plan's 20 eval episodes per split give wide CIs. At p≈5%, the Wilson 95% CI with n=20 is ~[0.9%, 24%]. Consider more eval episodes in T06, or rely on pooling over the last eval points and seeds.
+  - Re-time env sps on an idle M2 Max before quoting it.
+- **Next:** decide on world caching; then T05 (CPU vs MPS) and T06 (eval harness).
 
 ### 2026-11-04 — T03 — MacBook Pro M2 Max
 - **Completed:** T03.

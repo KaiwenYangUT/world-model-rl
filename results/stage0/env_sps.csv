@@ -1,0 +1,4 @@
+procs,env_steps,wall_s,sps,sps_step_only,n_resets,reset_mean_s,mean_episode_len,startup_s,warmup_s,warm_cache,load_avg_1m_before
+1,20000,12.3699,1616.8322,1635.4341,121,0.0011,165.6917,,25.0027,True,3.78
+4,20000,5.2562,3805.0304,,121,,165.2893,0.7266,26.0641,True,3.25
+8,20000,3.2355,6181.447,,112,,178.5714,0.7771,27.0766,True,4.46

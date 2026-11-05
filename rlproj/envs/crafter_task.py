@@ -18,7 +18,17 @@ One exception, found by tests/test_crafter_task.py: `World` keeps the objects of
 Set order follows object ids (memory addresses), so the same seed and actions can diverge within
 one process. `_DeterministicCrafterEnv` passes the chunk's objects sorted by position instead.
 The RNG draws are unchanged, so the despawn distribution is the same; only the order is fixed.
+
+World cache (T04 measured `Env.reset` at ~0.5 s, ~84% of env time for a random policy, almost all
+of it Python world generation in crafter/worldgen.py). The world RNG seed fully determines the
+freshly generated world, and our seeds come from fixed pools, so `_DeterministicCrafterEnv`
+generates each world once per process, stores a deep copy of the world state and player, and
+restores a copy on later resets. The copy includes `world.random`, which every object shares, so
+the episode continues exactly as after a fresh generation (tests check this). The restore
+mirrors the non-generation lines of crafter 1.8.3 `Env.reset`; re-check it if crafter changes.
 """
+
+import copy
 
 import crafter
 import gymnasium as gym
@@ -30,10 +40,52 @@ SPLITS = {"train": TRAIN_SEEDS, "heldout": HELDOUT_SEEDS}
 REWARD_MODES = ("crafter", "sparse")
 # Success is always logged for these, whatever the target (PLAN.md §3).
 TRACKED_ACHIEVEMENTS = ("collect_wood", "place_table", "make_wood_pickaxe")
+NOT_UNLOCKED = -1  # first_unlock value for an achievement not unlocked this episode
+
+# (world RNG seed, area) -> deep copy of (world.__dict__, player), taken right after generation.
+# Objects point at their World; in the snapshot that pointer is _WORLD_PLACEHOLDER, so the cache
+# keeps no env alive, and on restore it is remapped to the restoring env's own World.
+_WORLD_CACHE = {}
+_WORLD_CACHE_MAX = 1024  # ~150 pool seeds in practice; beyond this, just generate
+_WORLD_PLACEHOLDER = object()
+
+
+def clear_world_cache():
+    _WORLD_CACHE.clear()
 
 
 class _DeterministicCrafterEnv(crafter.Env):
-    """crafter.Env with a fixed iteration order over chunk objects (see module docstring)."""
+    """crafter.Env with a fixed iteration order over chunk objects and a per-process cache of
+    generated worlds (see module docstring)."""
+
+    cache_worlds = True
+
+    def reset(self):
+        if not self.cache_worlds:
+            return super().reset()
+        # Same seed expression as crafter 1.8.3 Env.reset, after its `_episode += 1`.
+        key = (hash((self._seed, self._episode + 1)) % (2 ** 31 - 1), tuple(self._area))
+        snapshot = _WORLD_CACHE.get(key)
+        if snapshot is None:
+            obs = super().reset()
+            if len(_WORLD_CACHE) < _WORLD_CACHE_MAX:
+                _WORLD_CACHE[key] = copy.deepcopy(
+                    (self._world.__dict__, self._player),
+                    memo={id(self._world): _WORLD_PLACEHOLDER})
+            return obs
+        # One deepcopy call, so the world and every object keep sharing one copied RNG.
+        state, player = copy.deepcopy(snapshot, memo={id(_WORLD_PLACEHOLDER): self._world})
+        # The World object itself is kept: the local, item, and semantic views hold it.
+        self._world.__dict__.clear()
+        self._world.__dict__.update(state)
+        # The rest of crafter 1.8.3 Env.reset, minus world.reset and generate_world.
+        self._episode += 1
+        self._step = 0
+        self._update_time()
+        self._player = player
+        self._last_health = player.health
+        self._unlocked = set()
+        return self._obs()
 
     def _balance_object(self, chunk, objs, *args, **kwargs):
         # One object per cell, so position is a unique sort key.
@@ -55,7 +107,8 @@ class CrafterTask(gym.Env):
 
     Extra `info` keys on every step:
         world_seed, episode_step, success (target unlocked so far this episode),
-        first_unlock ({achievement: episode step of its first unlock, or None}),
+        first_unlock ({achievement: episode step of its first unlock, or -1 if not yet}; ints
+            only, so gymnasium vector envs can stack it into arrays),
         crafter_reward (Crafter's reward, whatever reward_mode is).
     Crafter's own keys (inventory, achievements, discount, semantic, player_pos, reward) are
     passed through unchanged.
@@ -74,6 +127,7 @@ class CrafterTask(gym.Env):
         area=(64, 64),
         view=(9, 9),
         render_mode=None,
+        cache_worlds=True,
     ):
         if target not in crafter.constants.achievements:
             raise ValueError(f"unknown Crafter achievement: {target!r}")
@@ -96,6 +150,7 @@ class CrafterTask(gym.Env):
         # Crafter's own seed is overwritten on every reset, so 0 here is a placeholder.
         self._env = _DeterministicCrafterEnv(
             area=area, view=view, size=(size, size), reward=True, length=length, seed=0)
+        self._env.cache_worlds = cache_worlds
         self.observation_space = gym.spaces.Box(0, 255, (size, size, 3), np.uint8)
         self.action_space = gym.spaces.Discrete(len(crafter.constants.actions))
         self.world_seed = None
@@ -121,7 +176,7 @@ class CrafterTask(gym.Env):
         self._env._episode = 0
         obs = self._env.reset()
         self._step = 0
-        self._first_unlock = {name: None for name in self.tracked}
+        self._first_unlock = dict.fromkeys(self.tracked, NOT_UNLOCKED)
         info = {"world_seed": self.world_seed, "episode_step": 0, "success": False,
                 "first_unlock": dict(self._first_unlock)}
         return obs, info
@@ -130,9 +185,9 @@ class CrafterTask(gym.Env):
         obs, crafter_reward, done, info = self._env.step(int(action))
         self._step += 1
         for name in self.tracked:
-            if self._first_unlock[name] is None and info["achievements"][name] > 0:
+            if self._first_unlock[name] == NOT_UNLOCKED and info["achievements"][name] > 0:
                 self._first_unlock[name] = self._step
-        success = self._first_unlock[self.target] is not None
+        success = self._first_unlock[self.target] != NOT_UNLOCKED
         dead = info["discount"] == 0
         if self.reward_mode == "sparse":
             just_unlocked = self._first_unlock[self.target] == self._step

@@ -1,0 +1,135 @@
+{
+  "started": "2026-11-04T19:15:28-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-sb3/bin/python",
+    "scripts/random_baseline.py",
+    "--config",
+    "configs/stage0_random.yaml"
+  ],
+  "config_path": "configs/stage0_random.yaml",
+  "config": {
+    "exp": "stage0",
+    "method": "random",
+    "seed": 0,
+    "env": {
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "episodes_per_split": 200,
+    "splits": [
+      "train",
+      "heldout"
+    ],
+    "eval_procs": 8,
+    "sps": {
+      "steps": 20000,
+      "procs": [
+        1,
+        4,
+        8
+      ],
+      "warm_cache": true
+    },
+    "out_dir": "results/stage0"
+  },
+  "git": {
+    "commit": "39718d42137abdca64cca8f4a7672df6b7175d88",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "cpu",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "2.4.6",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "torch": "2.15.0",
+    "stable_baselines3": "2.9.2",
+    "sb3_contrib": "2.9.2"
+  },
+  "load_avg_start": [
+    3.7802734375,
+    3.5419921875,
+    3.25048828125
+  ],
+  "finished": "2026-11-04T19:17:40-05:00",
+  "wall_clock_s": 132.74,
+  "load_avg_end": [
+    7.7197265625,
+    4.7666015625,
+    3.74853515625
+  ],
+  "episode_phase_wall_s": 32.07,
+  "episode_length": {
+    "train": {
+      "min": 36,
+      "p25": 149.0,
+      "median": 164.0,
+      "p75": 186.0,
+      "max": 282,
+      "mean": 167.345,
+      "frac_truncated": 0.0
+    },
+    "heldout": {
+      "min": 33,
+      "p25": 153.75,
+      "median": 172.5,
+      "p75": 192.0,
+      "max": 371,
+      "mean": 172.065,
+      "frac_truncated": 0.0
+    }
+  },
+  "tracked_success": {
+    "train/collect_stone": [
+      0.0,
+      0.0,
+      0.0188
+    ],
+    "train/collect_wood": [
+      0.21,
+      0.1593,
+      0.2716
+    ],
+    "train/make_wood_pickaxe": [
+      0.0,
+      0.0,
+      0.0188
+    ],
+    "train/place_table": [
+      0.02,
+      0.0078,
+      0.0503
+    ],
+    "heldout/collect_stone": [
+      0.0,
+      0.0,
+      0.0188
+    ],
+    "heldout/collect_wood": [
+      0.215,
+      0.1637,
+      0.277
+    ],
+    "heldout/make_wood_pickaxe": [
+      0.0,
+      0.0,
+      0.0188
+    ],
+    "heldout/place_table": [
+      0.045,
+      0.0239,
+      0.0833
+    ]
+  },
+  "suggested_target": "place_table"
+}

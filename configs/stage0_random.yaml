@@ -1,0 +1,21 @@
+# Stage 0 (T04): random-policy baseline and raw Crafter env throughput. PLAN.md §4 Stage 0.
+#   .venv-sb3/bin/python scripts/random_baseline.py --config configs/stage0_random.yaml
+exp: stage0
+method: random
+seed: 0
+
+env:                      # passed to rlproj.envs.make_env; success is logged for every achievement
+  reward_mode: crafter
+  length: 10000
+
+episodes_per_split: 200   # world seeds assigned round-robin over each split's pool
+splits: [train, heldout]
+eval_procs: 8             # worker processes for the success episodes (not a timing number)
+
+sps:                      # raw env steps/sec, random actions, train pool; run before the episodes
+  steps: 20000            # env transitions per measurement (summed over processes)
+  procs: [1, 4, 8]        # 1 = plain loop in this process; >1 = gymnasium AsyncVectorEnv
+  warm_cache: true        # reset once on every train seed first (timed separately), so sps
+                          # is steady-state with the CrafterTask world cache filled
+
+out_dir: results/stage0
