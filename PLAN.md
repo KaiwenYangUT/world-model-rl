@@ -5,15 +5,62 @@
 > Statuses: `todo` · `in progress` · `done` · `blocked`.
 
 ## Current status
-- **Date:** 2026-11-04
-- **Stage:** **Stage 0** (setup and baselines) on the MacBook Pro M2 Max. T00–T05 done. **Target = `place_table`** (random success 2.0% train / 4.5% held-out). **PPO-CNN device = `mps` + `SubprocVecEnv`** (1,660 sps vs 347 on CPU).
-- **Next action:** T06 (eval harness), then T07 (`train_sb3.py` + PPO config). T10 (Dreamer launcher) can run in parallel.
-- **Blockers:** none. The T04/T05 timing numbers were taken with background load avg ≈ 3–7, so they are provisional (CONTRIBUTING.md rule 5); re-time on an idle machine before quoting them in the report.
+- **Date:** 2026-11-04 (overnight session)
+- **Stage:** Stages 0–3 done in preliminary form on the M2 Max. All four methods ran through the pipeline, and **preliminary results exist for RQ1, RQ2, and RQ3** (see *Preliminary results* below). The week-1 gate (§6) passes for PPO and DreamerV3.
+- **Next action:**
+  1. Read the preliminary results and decide the Stage 4 budget and settings.
+  2. DreamerV3 policy learning: the ratio-64 run decides whether more updates help (see results).
+  3. T12: DreamerV3 harness adapter, so Dreamer's eval comes from the shared harness.
+  4. T15 + T16 proper: held-out trajectories for RQ3.
+  5. Re-time on an idle machine.
+- **Still running when this was written:** DreamerV3 ratio 32 seeds 1–2, DreamerV3 ratio 64 seed 0, DQN 3-step seeds 1–2. The newest progress-log entry says what finished.
+- **Blockers:** none. **All timings tonight are provisional** (several jobs shared the machine; load avg up to ~100), per CONTRIBUTING.md rule 5.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
   - Results frozen: **Sun 2026-12-06**.
   - Presentation: 2nd week of December.
   - Final code and report: Dec 13–18.
+
+---
+
+## Preliminary results (2026-11-04, overnight; all provisional)
+Setting: Crafter, target `place_table`, standard reward unless stated, 250k env steps (DreamerV3 100k).
+- **Eval:** shared harness, 50 episodes per split per checkpoint, every 10k steps, fixed worlds and eval RNG.
+- **"Final":** the last 2 checkpoints × all seeds, pooled; 95% Wilson CI.
+- **Random policy:** 2.0% train / 4.5% held-out (n=200 each).
+- **Sources:** `results/main/summary.md` and `figures/main_*.png`.
+
+| Method | Seeds | Final success, train worlds | Final success, held-out worlds | Gap (pp) | Return (train) | §6 gate |
+|---|---|---|---|---|---|---|
+| PPO (CnnPolicy) | 3 | **62.0%** [56.4, 67.3] | **52.0%** [46.4, 57.6] | +10.0 | 4.42 | pass |
+| PPO-LSTM | 3 | 45.0% [39.5, 50.7] | 40.3% [34.9, 46.0] | +4.7 | 3.75 | pass |
+| DQN | 3 | 16.3% [12.6, 20.9] | 17.7% [13.8, 22.4] | −1.3 | 2.42 | pass (barely; seed-dependent) |
+| DQN 3-step (try 2) | 1 (+2 running) | 48.0% [38.5, 57.7] | 40.0% [30.9, 49.8] | +8.0 | 3.98 | pass |
+| DreamerV3 size1m, ratio 32, 100k | 1 | ~5% (in-loop eval, n≈20) | ~0% | – | 1.42 | "completing": pass; learning: no |
+| PPO, **sparse reward** (ablation) | 3 | **96.0%** [93.1, 97.7] | 82.3% [77.6, 86.2] | +13.7 | – | – |
+
+- **RQ1 (learning efficiency):**
+  - PPO learns fastest and best: `place_table` goes 4% → 62% in 250k. The Crafter paper reports 66% for PPO at 1M.
+  - PPO-LSTM is slower and lower (45%).
+  - DQN is slow and seed-dependent: one seed stays at random level, one reaches ~50% after 150k.
+  - 3-step returns plus longer exploration rescued the failing DQN seed (48%).
+  - DreamerV3 at size1m and train ratio 32 does not learn a policy in 100k steps.
+- **RQ2 (generalization):**
+  - Held-out success is lower than train for PPO (+10 pp gap, CIs barely overlap), PPO-LSTM (+4.7), and sparse-reward PPO (+13.7, CIs disjoint).
+  - The gap opens after ~100k steps (`figures/main_learning_curves_train_heldout.png`).
+  - DQN shows no gap at its low success level.
+- **RQ3 (world-model reliability, preliminary):**
+  - DreamerV3's world model clearly learns: image loss 1566 → 117, reward loss 5.5 → 0.26, continuation loss 0.72 → 0.05.
+  - Measured on the ~96k checkpoint over replay buffers (`figures/main_wm_error.png`), overall reward MAE is small (~0.03) and flat over k = 0..16.
+  - **But the reward head never predicts an achievement unlock** (|r̂| > 0.5): recall is 0 at every horizon, including the posterior, although 1.5% of replay steps are unlocks.
+  - Reward MAE on reward steps is ~0.4–0.6, and terminal recall is 0.
+  - Likely link to RQ1: the actor learns only from imagined rewards, which never contain the +1 unlocks.
+- **Reward ablation:** with the target-only sparse reward PPO reaches 96% train / 82% held-out, against 62% / 52% with the standard reward. Optimizing exactly the measured target helps a lot, but the generalization gap grows.
+- **Caveats:**
+  - DreamerV3's numbers come from its in-loop eval driver (randomly sampled worlds, ~10 episodes per split per round), not the shared harness (T12).
+  - RQ3 uses replay buffers (eval buffer mixes train and held-out worlds), not T15 trajectories.
+  - DQN and the ablation follow rl-zoo Atari settings scaled to 250k, with no tuning.
+  - Single machine, provisional timings.
 
 ---
 
@@ -232,10 +279,10 @@ Our shared harness depends only on numpy, crafter, and gymnasium, so it runs in 
 
 | Method | Guessed throughput | 50k | 100k | 250k | Measured |
 |---|---|---|---|---|---|
-| PPO-CNN (SB3, CPU) | 150–600 sps | 2–6 min | 3–11 min | 7–28 min | T05 benchmark (random-ish early policy, no eval): **MPS + 8 subproc 1,660 sps** → 100k ≈ 1 min, 250k ≈ 2.5 min; CPU + 8 subproc 347 sps. Full runs: TBD (Stage 1) |
-| PPO-LSTM | 0.3–0.5× PPO | 5–20 min | 10–40 min | 25–90 min | TBD (Stage 3) |
-| DQN (train_freq 4) | 100–300 sps | 3–8 min | 6–17 min | 14–42 min | TBD (Stage 3) |
-| DreamerV3 size1m, ratio 32 | t_update 0.3–1.5 s | 0.2–0.8 h | 0.3–1.5 h | 0.8–3.5 h | TBD (Stage 2) |
+| PPO-CNN (SB3, CPU) | 150–600 sps | 2–6 min | 3–11 min | 7–28 min | T05 benchmark (random-ish early policy, no eval): **MPS + 8 subproc 1,660 sps** → 100k ≈ 1 min, 250k ≈ 2.5 min; CPU + 8 subproc 347 sps. Full runs (Stage 1): 250k in 162 s (1,553 sps, load ≈ 2) to 268 s (938 sps, load ≈ 20), + ~25 s cache warm-up and ~2.5 min eval (26 ckpts × 100 episodes, 8 workers) |
+| PPO-LSTM | 0.3–0.5× PPO | 5–20 min | 10–40 min | 25–90 min | 250k: 9–10 min training (404–454 sps, mps + 8 subproc), +~3 min eval; **provisional (load avg 10–20)** |
+| DQN (train_freq 4) | 100–300 sps | 3–8 min | 6–17 min | 14–42 min | 250k: 20–24 min (173–210 sps, mps, 1 env); **provisional** |
+| DreamerV3 size1m, ratio 32 | t_update 0.3–1.5 s | 0.2–0.8 h | 0.3–1.5 h | 0.8–3.5 h | 100k: **93 min** wall incl. 7 eval rounds (fps/train 420–630 replay steps/s ≈ t_update 1.6–2.4 s; peak RSS 9.9 GB); **provisional (shared CPU)** |
 | DreamerV3 size1m, ratio 64 | 2× updates | 0.4–1.5 h | 0.7–3 h | 1.6–7 h | TBD |
 
 **Totals (guess, including ~20% eval overhead):**
@@ -337,22 +384,22 @@ ECE1508_RL_Project/
 | T03 | `CrafterTask` wrapper + seed pools + determinism test | `rlproj/envs`, tests | T01 | 3–5 h | – | done | Kevin |
 | T04 | Random baseline + env sps benchmark | `results/stage0/random.csv`, target choice | T03 | 2 h | – | done (sps to re-time idle) | Kevin |
 | T05 | CPU vs MPS PPO benchmark | device decision | T01 | 1 h | yes | done (mps + subproc) | Kevin |
-| T06 | Eval harness + adapter protocol + CSV schema + Wilson CI | `rlproj/eval`, tests | T03 | 4–6 h | – | todo | |
-| T07 | `train_sb3.py` + PPO config + checkpointing | PPO run | T06 | 3–4 h | – | todo | |
-| T08 | PPO 100k run + eval → **first result** | `results/ppo_cnn`, plot | T07, T09 | 0.5 day | – | todo | |
-| T09 | ★ Plotting scripts against the §7 schema (start with fake CSVs) | `plots/*.py` | schema only | 4–6 h | **yes** | todo | |
-| T10 | Dreamer launcher registering `CrafterTask`; size1m 2k-step smoke | `train_dreamer.py` | T02, T03 | 4–6 h | yes, with T06–T08 | todo | |
-| T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | todo | |
+| T06 | Eval harness + adapter protocol + CSV schema + Wilson CI | `rlproj/eval`, tests | T03 | 4–6 h | – | done | Kevin |
+| T07 | `train_sb3.py` + PPO config + checkpointing | PPO run | T06 | 3–4 h | – | done | Kevin |
+| T08 | PPO 100k run + eval → **first result** | `results/ppo_cnn`, plot | T07, T09 | 0.5 day | – | done (250k × 3 seeds) | Kevin |
+| T09 | ★ Plotting scripts against the §7 schema (start with fake CSVs) | `plots/*.py` | schema only | 4–6 h | **yes** | done (first version) | Kevin |
+| T10 | Dreamer launcher registering `CrafterTask`; size1m 2k-step smoke | `train_dreamer.py` | T02, T03 | 4–6 h | yes, with T06–T08 | done | Kevin |
+| T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | done (seed 0; seeds 1–2 and ratio 64 running) | Kevin |
 | T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | todo | |
-| T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | todo | |
-| T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | todo | |
+| T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-adapter unit test still todo) | Kevin |
+| T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds + 3-step variant) | Kevin |
 | T15 | ★ Held-out trajectory collector | `collect_heldout.py` + npz | T12 | 3–4 h | **yes** | todo | |
-| T16 | ★ `wm_eval` patch + script + plot | `wm_error.csv`, figure | T10 (any checkpoint), T15 | 1 day | **yes** | todo | |
+| T16 | ★ `wm_eval` patch + script + plot | `wm_error.csv`, figure | T10 (any checkpoint), T15 | 1 day | **yes** | in progress (preliminary: on replay buffers, not T15 trajectories) | Kevin |
 | T17 | ★ Demo GIF tool (incl. Dreamer imagined-vs-real) | `make_demo.py` | T06 | 4 h | **yes** | todo | |
 | T18 | ★ TA update note (§10) | email text | T04 | 1 h | **yes** | todo | |
 | T19 | ★ README with exact reproduction commands (kept current) | `README.md` | ongoing | ongoing | **yes** | todo | |
 | T20 | Stage 4 main runs (4 methods × 3 seeds) | `results/main` | T08, T11–T14, gate | 1–2 weeks of nights | split by machine | todo | |
-| T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | todo | |
+| T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | in progress (PPO × 3 seeds done; DreamerV3 todo) | Kevin |
 | T22 | ★ Report skeleton + related work | report draft | – | ongoing | **yes** | todo | |
 | T23 | (Optional) CUDA path if a GPU appears | timing comparison | T11 | 2–4 h | yes | todo | |
 | T24 | ★ Multi-machine run sheet + results merge procedure | run sheet in this file | T07 | 1–2 h | **yes** | todo | |
@@ -390,6 +437,60 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-04 (night) — overnight runs — MacBook Pro M2 Max
+- **Completed:**
+  - **T06** eval harness:
+    - `rlproj/eval/harness.py` (fixed, policy-independent world seeds per split; `evaluate` / `summarize`);
+    - `rlproj/adapters` protocol `reset(n, seed)` / `act(obs, first)` plus `RandomAdapter`;
+    - `rlproj/eval/metrics.py` (Wilson CI, Crafter score with the formula from crafter `analysis/common.py`, AUC, steps-to-fraction);
+    - `rlproj/utils/csvlog.py` (§7 schemas, schema-checked writer);
+    - `tests/test_eval.py`. 26 tests pass in both venvs.
+  - **T07** SB3 pipeline:
+    - `rlproj/adapters/sb3.py`;
+    - `scripts/train_sb3.py` (step-indexed checkpoints with training wall-clock, per-episode training log, meta.json);
+    - `scripts/eval.py` (parallel per-checkpoint eval; **re-running eval gives a byte-identical eval.csv**).
+  - **T08/T13/T14** runs (configs `ppo_cnn_250k`, `ppo_lstm_250k`, `dqn_250k`, `dqn_nstep3_250k`, all rl-zoo Atari blocks scaled to 250k; see each file's header):
+    - PPO, PPO-LSTM, DQN: 250k × 3 seeds each;
+    - DQN 3-step: seed 0 (seeds 1–2 queued).
+  - **T21 (early):** PPO with the target-only sparse reward, 250k × 3 seeds (`configs/ablation_sparse_ppo_cnn_250k.yaml`).
+  - **T10/T11** DreamerV3:
+    - `rlproj/envs/embodied_crafter.py` + `scripts/train_dreamer.py`: official DreamerV3 on CrafterTask via a wrapped `train_eval`. Upstream is unmodified for training; eval env 0 uses the train pool, env 1 the held-out pool.
+    - `scripts/dreamer_results.py` converts its logs.
+    - size1m, ratio 32, 100k: seed 0 done. Seeds 1–2 and a ratio-64 run are queued sequentially.
+  - **T16 (preliminary):**
+    - Patched `Agent.report` to emit per-horizon open-loop reward/continuation errors (`third_party/patches/dreamerv3-report-wm-horizon.patch`, recorded in PATCHES.md).
+    - `scripts/wm_eval.py` evaluates a checkpoint on its replay buffers.
+    - `plots/plot_wm_error.py`.
+  - **T09** plots: `plot_learning_curves.py`, `plot_generalization.py`, `plot_ablation.py`, `plot_wm_error.py`, and `summarize_results.py` (summary table and §6 gate). matplotlib added to `.venv-sb3`.
+- **Measurements:**
+  - See *Preliminary results* at the top for success, gap, and RQ3.
+  - Training speed: PPO 938–1,553 sps (mps + 8 subproc); PPO-LSTM 404–454 sps (mps; cpu was 123); DQN 168–210 sps (mps, 1 env; cpu was 64); DreamerV3 size1m r32 100k = 93 min wall (peak RSS 9.9 GB).
+  - Wall-clock per 10k steps: PPO 6.4–10.7 s, PPO-LSTM 22–25 s, DQN 48–60 s, DreamerV3 ~9.3 min including in-loop eval.
+  - **All provisional:** many jobs ran at once; the load avg reached ~100 when two DreamerV3 runs overlapped.
+  - Learning observed:
+    - PPO yes (4% → 62% place_table);
+    - PPO-LSTM yes (→ 45%);
+    - DQN partly (1 of 3 seeds clearly; 3-step variant yes on seed 0);
+    - DreamerV3 no (world-model losses fall, policy at random level).
+- **Decisions to review with the team:**
+  - Eval uses **50 episodes per split** (PLAN said 20), because CIs at n=20 are very wide.
+  - The DQN 3-step variant counts as "DQN try 2" (§4 allows 2–3 tries).
+  - I started the sparse-reward ablation early.
+  - I stopped a DreamerV3 ratio-64 run that overlapped another DreamerV3 run (oversubscription) and requeued it sequentially.
+- **Issues / open items:**
+  - DreamerV3 evaluation is not through the shared harness yet (T12). Its "final" numbers rest on about 20 in-loop episodes.
+  - RQ3 uses replay buffers. The eval buffer mixes train and held-out worlds and has no split label. Proper T15 trajectories are still needed.
+  - DreamerV3's `train_eval` saves checkpoints only every 30 min, so the latest checkpoint can lag the end of training (the seed-0 one is at ~96k of 100k).
+  - Upstream `report()` bug noted in PATCHES.md (`mets.update(mets)`); left unchanged.
+  - The PPO-LSTM recurrent-adapter unit test (T13) is not written yet.
+  - No timing numbers are fit to quote (rule 5).
+- **Next:**
+  - Review results.
+  - Decide whether DreamerV3 should get a higher train ratio or a larger model, based on the ratio-64 run.
+  - T12 adapter; T15 + T16 proper.
+  - Re-time on an idle machine.
+  - Stage 4 budget: PPO is cheap enough for 1M steps.
 
 ### 2026-11-04 — T05 — MacBook Pro M2 Max
 - **Completed:** T05.

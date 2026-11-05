@@ -101,6 +101,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--exp", default="main")
     parser.add_argument("--splits", default="train")
+    parser.add_argument("--methods", default=None, help="comma-separated subset, e.g. ppo_cnn")
     args = parser.parse_args()
     splits = args.splits.split(",")
     data = load_eval(args.exp)
@@ -108,6 +109,8 @@ def main():
         raise SystemExit(f"no results/{args.exp}/*/seed*/eval.csv found")
     rand_succ, rand_ret = random_baseline()
     methods = [m for m in METHODS if m in data] + [m for m in data if m not in METHODS]
+    if args.methods:
+        methods = [m for m in methods if m in args.methods.split(",")]
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 7.5), facecolor=SURFACE)
     panels = PANELS + [("return", "mean episode return (standard Crafter reward)")]
