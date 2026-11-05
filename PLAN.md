@@ -36,7 +36,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
 | PPO-LSTM | 3 | 45.0% [39.5, 50.7] | 40.3% [34.9, 46.0] | +4.7 | 3.75 | pass |
 | DQN | 3 | 16.3% [12.6, 20.9] | 17.7% [13.8, 22.4] | −1.3 | 2.42 | pass (barely; seed-dependent) |
 | DQN 3-step (try 2) | 3 | 47.0% [41.4, 52.7] | 37.0% [31.7, 42.6] | +10.0 | 3.88 | pass |
-| DreamerV3 size1m, ratio 32, 100k | 1 | 0.0% [0.0, 7.1] (harness, final ckpt ≈ 96k, n=50) | 2.0% [0.4, 10.5] | −2.0 | 1.34 | "completing": pass; learning: no |
+| DreamerV3 size1m, ratio 32, 100k | 2 (+1 queued) | 4.0% [1.6, 9.8] (harness, latest ckpts ≈ 96k / 70k, n=100) | 2.0% [0.6, 7.0] | +2.0 | 1.35 | "completing": pass; learning: no |
 | PPO, **sparse reward** (ablation) | 3 | **96.0%** [93.1, 97.7] | 82.3% [77.6, 86.2] | +13.7 | – | – |
 
 - **RQ1 (learning efficiency):**
@@ -52,7 +52,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
 - **RQ3 (world-model reliability, preliminary):**
   - DreamerV3's world model clearly learns: image loss 1566 → 117, reward loss 5.5 → 0.26, continuation loss 0.72 → 0.05.
   - Measured on the ~96k checkpoint over replay buffers (`figures/main_wm_error.png`), overall reward MAE is small (~0.03) and flat over k = 0..16.
-  - **But the reward head never predicts an achievement unlock** (|r̂| > 0.5): recall is 0 at every horizon, including the posterior, although 1.5% of replay steps are unlocks.
+  - **But the reward head never predicts an achievement unlock** (|r̂| > 0.5): recall is 0 at every horizon, including the posterior, although 1.5% of replay steps are unlocks. Replicated on seed 1, whose in-training `report/wm/` logs show unlock recall 0 at 13k, 52k, and 92k steps while posterior reward MAE falls 0.13 → 0.04.
   - Reward MAE on reward steps is ~0.4–0.6, and terminal recall is 0.
   - Likely link to RQ1: the actor learns only from imagined rewards, which never contain the +1 unlocks.
 - **Reward ablation:** with the target-only sparse reward PPO reaches 96% train / 82% held-out, against 62% / 52% with the standard reward. Optimizing exactly the measured target helps a lot, but the generalization gap grows.
