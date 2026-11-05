@@ -38,7 +38,7 @@ def make_crafter_env(env_cfg, log_dir, role, config, index, **overrides):
 
     split = "train" if role == "train" else EVAL_SPLITS[index % len(EVAL_SPLITS)]
     seed = hash((int(config.seed), 0 if role == "train" else 1, int(index))) % (2 ** 31 - 1)
-    log = os.path.join(log_dir, f"{role}{index}_{split}.jsonl")
+    log = os.path.join(log_dir, f"{role}{index}_{split}.jsonl") if log_dir else None
     env = EmbodiedCrafterTask(env_cfg, split, seed=seed, episode_log=log)
     return dreamer_main.wrap_env(env, config)
 

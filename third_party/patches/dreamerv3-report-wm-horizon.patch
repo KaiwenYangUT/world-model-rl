@@ -1,0 +1,80 @@
+diff --git a/dreamerv3/agent.py b/dreamerv3/agent.py
+index 0cada34..d46e065 100644
+--- a/dreamerv3/agent.py
++++ b/dreamerv3/agent.py
+@@ -270,6 +270,14 @@ class Agent(embodied.jax.Agent):
+         except KeyError:
+           print(f'Skipping gradnorm summary for missing loss: {key}')
+ 
++    # rlproj patch (see ../../PATCHES.md): open-loop world-model errors per
++    # imagination horizon k for RQ3, on the full report batch. Observe the first
++    # half, imagine the second half with the recorded actions, and compare the
++    # reward / continuation heads with the data. Sums and counts per k, so
++    # several batches can be pooled exactly. Steps after a new episode starts
++    # inside the imagined window are masked out.
++    metrics.update(_wm_horizon_metrics(self, carry, outs, obs, prevact, T))
++
+     # Open loop
+     firsthalf = lambda xs: jax.tree.map(lambda x: x[:RB, :T // 2], xs)
+     secondhalf = lambda xs: jax.tree.map(lambda x: x[:RB, T // 2:], xs)
+@@ -488,3 +496,60 @@ def lambda_return(last, term, rew, val, boot, disc, lam):
+   for t in reversed(range(live.shape[1])):
+     rets.append(interm[:, t] + live[:, t] * cont[:, t] * rets[-1])
+   return jnp.stack(list(reversed(rets))[:-1], 1)
++
++
++def _wm_horizon_metrics(agent, carry, outs, obs, prevact, T):
++  # rlproj patch (see ../../PATCHES.md), used by Agent.report for RQ3.
++  # Returns scalars wm/k{k:02d}/<name>: per-horizon sums and counts over the
++  # batch. k = 0 is the posterior over the context half (reference point);
++  # k = 1..T-C are open-loop imagination steps with the recorded actions.
++  C = T // 2
++  first = lambda xs: jax.tree.map(lambda x: x[:, :C], xs)
++  second = lambda xs: jax.tree.map(lambda x: x[:, C:], xs)
++  dyn_carry = carry[1]
++  dyn_carry, _, postfeat = agent.dyn.observe(
++      dyn_carry, first(outs['tokens']), first(prevact), first(obs['is_first']),
++      training=False)
++  _, imgfeat, _ = agent.dyn.imagine(
++      dyn_carry, second(prevact), length=T - C, training=False)
++
++  def stats(feat, rew, term, valid):
++    inp = agent.feat2tensor(feat)
++    rew_hat = f32(agent.rew(inp, 2).pred())
++    con_hat = jnp.clip(f32(agent.con(inp, 2).prob(1)), 1e-6, 1 - 1e-6)
++    rew, con, valid = f32(rew), 1 - f32(term), f32(valid)
++    event = f32(rew != 0) * valid  # any reward, incl. +-0.1 health changes
++    unlock = f32(jnp.abs(rew) > 0.5) * valid  # achievement unlocks (+1)
++    hit = f32(jnp.abs(rew_hat) > 0.5)
++    termv = f32(term) * valid
++    err = jnp.abs(rew_hat - rew)
++    return {
++        'n': valid, 'rew_abs': err * valid,
++        'n_event': event, 'rew_abs_event': err * event,
++        'unlock_tp': hit * unlock, 'unlock_fn': (1 - hit) * unlock,
++        'unlock_fp': hit * (valid - unlock),
++        'cont_brier': jnp.square(con_hat - con) * valid,
++        'cont_bce': -(con * jnp.log(con_hat) +
++                      (1 - con) * jnp.log(1 - con_hat)) * valid,
++        'n_term': termv, 'term_hit': f32(con_hat < 0.5) * termv,
++        'rew_hat_sum': rew_hat * valid, 'rew_sum': rew * valid,
++    }
++
++  # Posterior (k = 0), pooled over the context half.
++  post = stats(postfeat, first(obs['reward']), first(obs['is_terminal']),
++               jnp.ones_like(first(obs['is_first'])))
++  metrics = {f'wm/k00/{key}': value.sum() for key, value in post.items()
++             if not key.endswith('_sum')}
++  # Open loop (k >= 1), masked from the first new episode in the window on.
++  valid = jnp.cumsum(i32(second(obs['is_first'])), 1) == 0
++  img = stats(imgfeat, second(obs['reward']), second(obs['is_terminal']), valid)
++  cum_err = jnp.abs(jnp.cumsum(img['rew_hat_sum'], 1) -
++                    jnp.cumsum(img['rew_sum'], 1)) * f32(valid)
++  img['cum_rew_abs'] = cum_err
++  for key, value in img.items():
++    if key.endswith('_sum'):
++      continue
++    per_k = value.sum(0)
++    for k in range(T - C):
++      metrics[f'wm/k{k + 1:02d}/{key}'] = per_k[k]
++  return metrics

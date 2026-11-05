@@ -68,8 +68,8 @@ def main():
     if os.path.exists(meta_path):
         with open(meta_path) as f:
             t0 = datetime.datetime.fromisoformat(json.load(f)["started"]).timestamp()
-    else:  # run still going: approximate the start by the first episode end
-        t0 = times[0]
+    else:  # run still going: upstream writes logdir/config.yaml at launch
+        t0 = os.path.getmtime(os.path.join(REPO_ROOT, "runs", rel, "logdir", "config.yaml"))
 
     def global_steps(t):
         return int(round(float(np.interp(t, np.concatenate([[t0], times]),
