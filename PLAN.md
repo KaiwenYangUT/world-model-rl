@@ -13,7 +13,7 @@
   3. T12: DreamerV3 harness adapter, so Dreamer's eval comes from the shared harness.
   4. T15 + T16 proper: held-out trajectories for RQ3.
   5. Re-time on an idle machine.
-- **Still running when this was written:** DreamerV3 ratio 32 seeds 1–2, DreamerV3 ratio 64 seed 0, DQN 3-step seeds 1–2. The newest progress-log entry says what finished.
+- **Still running when this was written:** DreamerV3 ratio 32 seeds 1–2 and ratio 64 seed 0 (one at a time). The newest progress-log entry says what finished.
 - **Blockers:** none. **All timings tonight are provisional** (several jobs shared the machine; load avg up to ~100), per CONTRIBUTING.md rule 5.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
@@ -35,7 +35,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
 | PPO (CnnPolicy) | 3 | **62.0%** [56.4, 67.3] | **52.0%** [46.4, 57.6] | +10.0 | 4.42 | pass |
 | PPO-LSTM | 3 | 45.0% [39.5, 50.7] | 40.3% [34.9, 46.0] | +4.7 | 3.75 | pass |
 | DQN | 3 | 16.3% [12.6, 20.9] | 17.7% [13.8, 22.4] | −1.3 | 2.42 | pass (barely; seed-dependent) |
-| DQN 3-step (try 2) | 1 (+2 running) | 48.0% [38.5, 57.7] | 40.0% [30.9, 49.8] | +8.0 | 3.98 | pass |
+| DQN 3-step (try 2) | 3 | 47.0% [41.4, 52.7] | 37.0% [31.7, 42.6] | +10.0 | 3.88 | pass |
 | DreamerV3 size1m, ratio 32, 100k | 1 | ~5% (in-loop eval, n≈20) | ~0% | – | 1.42 | "completing": pass; learning: no |
 | PPO, **sparse reward** (ablation) | 3 | **96.0%** [93.1, 97.7] | 82.3% [77.6, 86.2] | +13.7 | – | – |
 
@@ -43,10 +43,10 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
   - PPO learns fastest and best: `place_table` goes 4% → 62% in 250k. The Crafter paper reports 66% for PPO at 1M.
   - PPO-LSTM is slower and lower (45%).
   - DQN is slow and seed-dependent: one seed stays at random level, one reaches ~50% after 150k.
-  - 3-step returns plus longer exploration rescued the failing DQN seed (48%).
+  - 3-step returns plus longer exploration (DQN try 2) raise DQN to 47% (3 seeds), close to PPO-LSTM.
   - DreamerV3 at size1m and train ratio 32 does not learn a policy in 100k steps.
 - **RQ2 (generalization):**
-  - Held-out success is lower than train for PPO (+10 pp gap, CIs barely overlap), PPO-LSTM (+4.7), and sparse-reward PPO (+13.7, CIs disjoint).
+  - Held-out success is lower than train for PPO (+10 pp gap, CIs barely overlap), DQN 3-step (+10, CIs barely overlap), PPO-LSTM (+4.7), and sparse-reward PPO (+13.7, CIs disjoint).
   - The gap opens after ~100k steps (`figures/main_learning_curves_train_heldout.png`).
   - DQN shows no gap at its low success level.
 - **RQ3 (world-model reliability, preliminary):**
@@ -452,7 +452,7 @@ Newest entry first. Template:
     - `scripts/eval.py` (parallel per-checkpoint eval; **re-running eval gives a byte-identical eval.csv**).
   - **T08/T13/T14** runs (configs `ppo_cnn_250k`, `ppo_lstm_250k`, `dqn_250k`, `dqn_nstep3_250k`, all rl-zoo Atari blocks scaled to 250k; see each file's header):
     - PPO, PPO-LSTM, DQN: 250k × 3 seeds each;
-    - DQN 3-step: seed 0 (seeds 1–2 queued).
+    - DQN 3-step: 3 seeds.
   - **T21 (early):** PPO with the target-only sparse reward, 250k × 3 seeds (`configs/ablation_sparse_ppo_cnn_250k.yaml`).
   - **T10/T11** DreamerV3:
     - `rlproj/envs/embodied_crafter.py` + `scripts/train_dreamer.py`: official DreamerV3 on CrafterTask via a wrapped `train_eval`. Upstream is unmodified for training; eval env 0 uses the train pool, env 1 the held-out pool.
