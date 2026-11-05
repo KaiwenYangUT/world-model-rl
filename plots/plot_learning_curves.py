@@ -25,7 +25,8 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Fixed method -> categorical slot order (dataviz reference palette, light mode).
 METHODS = {"ppo_cnn": ("PPO", "#2a78d6"), "ppo_lstm": ("PPO-LSTM", "#eb6834"),
            "dqn": ("DQN", "#1baf7a"), "dreamerv3": ("DreamerV3", "#eda100"),
-           "dqn_nstep3": ("DQN 3-step", "#e87ba4")}
+           "dqn_nstep3": ("DQN 3-step", "#e87ba4"),
+           "dreamerv3_r64": ("DreamerV3 ratio 64", "#008300")}
 INK, INK_2, GRID, SURFACE, RANDOM = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb", "#8a8984"
 PANELS = [("place_table", "place_table success (target)"),
           ("collect_wood", "collect_wood success"),

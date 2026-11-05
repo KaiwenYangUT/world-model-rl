@@ -2,8 +2,8 @@
 
     .venv-sb3/bin/python plots/plot_wm_error.py --exp main
 
-Reads results/<exp>/dreamerv3/seed*/wm_error_{replay,eval_replay}.csv (scripts/wm_eval.py) and
-writes figures/<exp>_wm_error.png. k = 0 is the posterior (observed) reference; k >= 1 is
+Reads results/<exp>/<method>/seed*/wm_error_{replay,eval_replay}.csv (scripts/wm_eval.py) and
+writes figures/<exp>_wm_error[_<method>].png (--method, default dreamerv3). k = 0 is the posterior (observed) reference; k >= 1 is
 open-loop imagination with the recorded actions. Mean over seeds when there are several.
 """
 
@@ -29,9 +29,9 @@ PANELS = [("rew_mae_event", "reward MAE on reward steps (r ≠ 0)", "MAE"),
           ("cum_rew_err", "|cumulative reward error| per step", "abs error")]
 
 
-def load(exp, source):
+def load(exp, method, source):
     tables = []
-    for path in sorted(glob.glob(os.path.join(REPO_ROOT, "results", exp, "dreamerv3", "seed*",
+    for path in sorted(glob.glob(os.path.join(REPO_ROOT, "results", exp, method, "seed*",
                                               f"wm_error_{source}.csv"))):
         with open(path, newline="") as f:
             tables.append(list(csv.DictReader(f)))
@@ -45,14 +45,17 @@ def series(tables, column):
         for r in t:
             if r[column] != "":
                 vals[i, ks.index(int(r["k"]))] = float(r[column])
-    return np.array(ks), np.nanmean(vals, 0)
+    with np.errstate(all="ignore"):
+        mean = np.array([np.nan if np.isnan(c).all() else np.nanmean(c) for c in vals.T])
+    return np.array(ks), mean
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--exp", default="main")
+    parser.add_argument("--method", default="dreamerv3")
     args = parser.parse_args()
-    data = {s: load(args.exp, s) for s in SOURCES}
+    data = {s: load(args.exp, args.method, s) for s in SOURCES}
     if not any(data.values()):
         raise SystemExit("no wm_error_*.csv found; run scripts/wm_eval.py first")
     fig, axes = plt.subplots(2, 2, figsize=(11, 7), facecolor=SURFACE)
@@ -77,12 +80,15 @@ def main():
         for side in ("left", "bottom"):
             ax.spines[side].set_color(GRID)
         ax.tick_params(colors=INK_2, labelsize=8)
-        ax.legend(fontsize=7.5, frameon=False, labelcolor=INK_2)
-    fig.suptitle(f"DreamerV3 size1m world model vs open-loop horizon ({args.exp}); context 16 "
+        if column == "rew_event_recall":
+            ax.set_ylim(-0.02, 1.02)
+        ax.legend(fontsize=7.5, frameon=False, labelcolor=INK_2, loc="best")
+    fig.suptitle(f"{args.method} (size1m) world model vs open-loop horizon ({args.exp}); context 16 "
                  "observed steps, then 16 imagined with recorded actions; latest checkpoint",
                  x=0.01, ha="left", fontsize=10, color=INK_2)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
-    out = os.path.join(REPO_ROOT, "figures", f"{args.exp}_wm_error.png")
+    tag = "" if args.method == "dreamerv3" else f"_{args.method}"
+    out = os.path.join(REPO_ROOT, "figures", f"{args.exp}_wm_error{tag}.png")
     fig.savefig(out, dpi=150, facecolor=SURFACE)
     print(f"wrote {os.path.relpath(out, REPO_ROOT)}")
 

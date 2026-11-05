@@ -1,0 +1,27 @@
+# Stage 2 follow-up: DreamerV3 size1m at train_ratio 64 (r32 run: world model learned, policy
+# stayed at random level by 100k). Only run.train_ratio differs from dreamer_size1m_r32_100k.yaml.
+#   .venv-dreamer/bin/python scripts/train_dreamer.py --config configs/dreamer_size1m_r64_100k.yaml --seed 0
+exp: main
+method: dreamerv3_r64
+
+env:
+  target: place_table
+  reward_mode: crafter
+  length: 10000
+
+# Passed to third_party/dreamerv3/dreamerv3/main.py (logdir, seed, script set by the launcher).
+# The crafter block sets train_ratio 512 and envs 1; overridden here (PLAN.md §2).
+dreamer_flags:
+  configs: [crafter, size1m]
+  run.steps: 100000
+  run.train_ratio: 64
+  run.envs: 4
+  run.eval_envs: 2          # env 0 = train pool, env 1 = held-out pool (launcher)
+  run.eval_eps: 20          # per eval round, split over the two eval envs
+  run.report_every: 900     # seconds between eval rounds (upstream clock is wall time)
+  run.save_every: 1800      # seconds
+  run.log_every: 120        # seconds
+  replay.size: 100000
+  jax.platform: cpu
+  jax.compute_dtype: float32  # CPU; bfloat16 (upstream default) not compared yet
+  logger.outputs: [jsonl]
