@@ -1,0 +1,37 @@
+# Stage 4 ablation (T21, early): PPO CnnPolicy with the target-only SPARSE reward. PLAN.md §3.
+#   .venv-sb3/bin/python scripts/train_sb3.py --config configs/ablation_sparse_ppo_cnn_250k.yaml --seed 0
+exp: ablation_sparse
+method: ppo_cnn
+algo: PPO
+policy: CnnPolicy
+total_steps: 250000       # week-1 gate allows <= 250k (PLAN.md §6)
+n_envs: 8
+vec_env: subproc
+device: mps               # T05: mps + subproc is fastest for PPO CnnPolicy
+warm_cache: true          # fill the world cache in every env before training (timed separately)
+
+env:
+  target: place_table
+  reward_mode: sparse     # +1 on the first place_table only; episode ends on success
+  length: 10000
+
+# rl-baselines3-zoo hyperparams/ppo.yml `atari` block, with constant lr / clip instead of its
+# linear schedules and no frame stack (memory is what PPO-LSTM adds).
+algo_kwargs:
+  n_steps: 128
+  n_epochs: 4
+  batch_size: 256
+  learning_rate: 2.5e-4
+  clip_range: 0.1
+  vf_coef: 0.5
+  ent_coef: 0.01
+
+eval:
+  every: 10000            # checkpoint interval in env steps (also step 0)
+  n_episodes: 50          # per split; PLAN.md says 20, raised because CIs at n=20 are very wide
+  n_envs: 8               # parallel episodes per evaluate() call
+  rng_seed: 1234          # fixed: same worlds and action-sampling seed for every checkpoint
+  policy: sample
+  device: cpu             # small-batch inference is faster on cpu (T05 rollout times)
+  workers: 8              # checkpoints evaluated in parallel processes
+  splits: [train, heldout]

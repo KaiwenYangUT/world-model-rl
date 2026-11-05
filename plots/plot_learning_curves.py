@@ -1,7 +1,8 @@
-"""Learning curves from the shared-harness CSVs (PLAN.md §7): success vs env steps, train
-(solid) vs held-out (dashed), with the random-policy baseline as a reference line.
+"""Learning curves from the shared-harness CSVs (PLAN.md §7): success vs env steps per method,
+with the random-policy baseline as a reference line. --splits train (default; RQ1) or
+train,heldout (held-out dashed; RQ2 detail for few methods).
 
-    .venv-sb3/bin/python plots/plot_learning_curves.py --exp main
+    .venv-sb3/bin/python plots/plot_learning_curves.py --exp main [--splits train,heldout]
 
 Reads results/<exp>/<method>/seed*/eval.csv and results/stage0/random.csv; writes
 figures/<exp>_learning_curves.png. Lines are the mean over seeds; the band spans the
@@ -23,7 +24,8 @@ import numpy as np  # noqa: E402
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Fixed method -> categorical slot order (dataviz reference palette, light mode).
 METHODS = {"ppo_cnn": ("PPO", "#2a78d6"), "ppo_lstm": ("PPO-LSTM", "#eb6834"),
-           "dqn": ("DQN", "#1baf7a"), "dreamerv3": ("DreamerV3", "#eda100")}
+           "dqn": ("DQN", "#1baf7a"), "dreamerv3": ("DreamerV3", "#eda100"),
+           "dqn_nstep3": ("DQN 3-step", "#e87ba4")}
 INK, INK_2, GRID, SURFACE, RANDOM = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb", "#8a8984"
 PANELS = [("place_table", "place_table success (target)"),
           ("collect_wood", "collect_wood success"),
@@ -97,7 +99,9 @@ def draw(ax, steps, table, color, linestyle, label):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--exp", default="main")
+    parser.add_argument("--splits", default="train")
     args = parser.parse_args()
+    splits = args.splits.split(",")
     data = load_eval(args.exp)
     if not data:
         raise SystemExit(f"no results/{args.exp}/*/seed*/eval.csv found")
@@ -113,13 +117,15 @@ def main():
             name, color = METHODS.get(method, (method, INK_2))
             key_target = "place_table" if is_return else target
             for split, ls in (("train", "-"), ("heldout", "--")):
+                if split not in splits:
+                    continue
                 per_seed = data[method].get((key_target, split))
                 if not per_seed:
                     continue
                 steps, table = curve(per_seed, 1 if is_return else 0)
                 n = len(per_seed)
-                draw(ax, steps, table, color, ls,
-                     f"{name} {'train' if split == 'train' else 'held-out'} (n={n} seeds)")
+                tag = "" if len(splits) == 1 else (" train" if split == "train" else " held-out")
+                draw(ax, steps, table, color, ls, f"{name}{tag} (n={n} seed{'s' * (n > 1)})")
         ref = rand_ret if is_return else rand_succ.get(target, 0.0)
         ax.axhline(ref, color=RANDOM, linestyle=":", linewidth=1.5,
                    label=f"random policy ({ref:.2f})" if is_return else
@@ -128,12 +134,15 @@ def main():
             ax.set_ylim(0, max(0.05, ax.get_ylim()[1]))
             ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
         ax.legend(fontsize=7.5, frameon=False, labelcolor=INK_2, loc="upper left")
-    fig.suptitle(f"Crafter, standard reward — learning curves ({args.exp}); eval: 50 episodes "
-                 "per split per checkpoint; band = min..max over seeds",
+    worlds = " + ".join({"train": "train worlds", "heldout": "held-out worlds (dashed)"}[s]
+                        for s in splits)
+    fig.suptitle(f"Crafter ({args.exp}) — eval on {worlds}, 50 episodes per checkpoint; line = "
+                 "mean over seeds, band = min..max",
                  x=0.01, ha="left", fontsize=10, color=INK_2)
     fig.tight_layout(rect=(0, 0, 1, 0.96))
     os.makedirs(os.path.join(REPO_ROOT, "figures"), exist_ok=True)
-    out = os.path.join(REPO_ROOT, "figures", f"{args.exp}_learning_curves.png")
+    suffix = "" if splits == ["train"] else "_" + "_".join(splits)
+    out = os.path.join(REPO_ROOT, "figures", f"{args.exp}_learning_curves{suffix}.png")
     fig.savefig(out, dpi=150, facecolor=SURFACE)
     print(f"wrote {os.path.relpath(out, REPO_ROOT)}")
 

@@ -28,7 +28,8 @@ from rlproj.eval.metrics import (  # noqa: E402
 )
 
 TARGET = "place_table"
-NAMES = {"ppo_cnn": "PPO", "ppo_lstm": "PPO-LSTM", "dqn": "DQN", "dreamerv3": "DreamerV3"}
+NAMES = {"ppo_cnn": "PPO", "ppo_lstm": "PPO-LSTM", "dqn": "DQN", "dreamerv3": "DreamerV3",
+         "dqn_nstep3": "DQN 3-step"}
 
 
 def read_csv(path):

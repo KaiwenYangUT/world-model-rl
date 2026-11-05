@@ -1,0 +1,94 @@
+{
+  "started": "2026-11-04T22:24:02-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-sb3/bin/python",
+    "scripts/train_sb3.py",
+    "--config",
+    "configs/ablation_sparse_ppo_cnn_250k.yaml",
+    "--seed",
+    "1"
+  ],
+  "config_path": "configs/ablation_sparse_ppo_cnn_250k.yaml",
+  "config": {
+    "exp": "ablation_sparse",
+    "method": "ppo_cnn",
+    "algo": "PPO",
+    "policy": "CnnPolicy",
+    "total_steps": 250000,
+    "n_envs": 8,
+    "vec_env": "subproc",
+    "device": "mps",
+    "warm_cache": true,
+    "env": {
+      "target": "place_table",
+      "reward_mode": "sparse",
+      "length": 10000
+    },
+    "algo_kwargs": {
+      "n_steps": 128,
+      "n_epochs": 4,
+      "batch_size": 256,
+      "learning_rate": 0.00025,
+      "clip_range": 0.1,
+      "vf_coef": 0.5,
+      "ent_coef": 0.01
+    },
+    "eval": {
+      "every": 10000,
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "policy": "sample",
+      "device": "cpu",
+      "workers": 8,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    }
+  },
+  "git": {
+    "commit": "43e901a7077892455fda71f7f61d764f8bed6eb9",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "mps",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "2.4.6",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "torch": "2.15.0",
+    "stable_baselines3": "2.9.2",
+    "sb3_contrib": "2.9.2"
+  },
+  "load_avg_start": [
+    60.5693359375,
+    31.01416015625,
+    21.54248046875
+  ],
+  "seed": 1,
+  "finished": "2026-11-04T22:30:07-05:00",
+  "wall_clock_s": 365.25,
+  "load_avg_end": [
+    15.9052734375,
+    24.39501953125,
+    22.3212890625
+  ],
+  "env_steps": 250880,
+  "train_wall_clock_s": 299.42,
+  "warmup_s": 62.69,
+  "wall_clock_per_10k_steps_s": 11.93,
+  "train_sps": 837.9,
+  "torch_version": "2.15.0",
+  "n_train_episodes": 4503
+}
