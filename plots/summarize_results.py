@@ -72,7 +72,8 @@ def summarize_method(exp, method):
             budget = max(budget, ckpts[-1])
             last2 = set(ckpts[-2:])
             episodes += [dict(e, seed=seed) for e in eps if int(e["ckpt_env_steps"]) in last2]
-            sources.add("harness, last 2 ckpts" if "dreamer" not in method else "in-loop eval")
+            harness_curve = os.path.exists(os.path.join(d, "eval_meta.json"))
+            sources.add("harness, last 2 ckpts" if harness_curve else "in-loop eval")
         for c in ckpts:
             sel = [e for e in eps if int(e["ckpt_env_steps"]) == c and e["split"] == "train"]
             curves[seed][c] = np.mean([int(e[f"first_{TARGET}"]) >= 0 for e in sel])

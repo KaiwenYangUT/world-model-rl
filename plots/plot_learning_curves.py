@@ -39,12 +39,19 @@ def read_csv(path):
         return list(csv.DictReader(f))
 
 
+INLOOP = set()  # methods whose eval.csv is DreamerV3's in-loop eval, not the harness
+
+
 def load_eval(exp):
     """{method: {(target, split): {seed: [(steps, success, mean_return)]}}}"""
     data = defaultdict(lambda: defaultdict(dict))
     for path in sorted(glob.glob(os.path.join(REPO_ROOT, "results", exp, "*", "seed*",
                                               "eval.csv"))):
         method = path.split(os.sep)[-3]
+        # The harness (scripts/eval.py, scripts/eval_dreamer.py) writes eval_meta.json next to
+        # eval.csv; scripts/dreamer_results.py (in-loop eval) does not.
+        if not os.path.exists(os.path.join(os.path.dirname(path), "eval_meta.json")):
+            INLOOP.add(method)
         for r in read_csv(path):
             key = (r["target"], r["split"])
             data[method][key].setdefault(int(r["seed"]), []).append(
@@ -130,7 +137,7 @@ def main():
                 steps, table = curve(per_seed, 1 if is_return else 0)
                 n = len(per_seed)
                 tag = "" if len(splits) == 1 else (" train" if split == "train" else " held-out")
-                note = " [in-loop eval]" if method.startswith("dreamerv3") else ""
+                note = " [in-loop eval]" if method in INLOOP else ""
                 draw(ax, steps, table, color, ls,
                      f"{name}{tag} (n={n} seed{'s' * (n > 1)}){note}")
         ref = rand_ret if is_return else rand_succ.get(target, 0.0)

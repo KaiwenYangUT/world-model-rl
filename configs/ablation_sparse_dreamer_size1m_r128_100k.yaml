@@ -1,0 +1,39 @@
+# Stage 4 ablation (T21): DreamerV3 size1m at train ratio 128 with the target-only SPARSE reward.
+# Same as dreamer_size1m_r128_100k.yaml except env.reward_mode and the step checkpoints.
+# Question: with the standard reward, ratio 128 learned the easy achievements (saplings, wood,
+# water) but never place_table (0/100). Does rewarding only the target fix that?
+#   .venv-dreamer/bin/python scripts/train_dreamer.py --config configs/ablation_sparse_dreamer_size1m_r128_100k.yaml --seed 0
+exp: ablation_sparse
+method: dreamerv3_r128
+
+env:
+  target: place_table
+  reward_mode: sparse     # +1 on the first place_table only; episode ends on success
+  length: 10000
+
+# Agent saved every 10k env steps (and at step 0 and the end) by the launcher, so
+# scripts/eval_dreamer.py can score every checkpoint with the shared harness.
+ckpt_every_steps: 10000
+
+eval:                     # same as the SB3 runs
+  n_episodes: 50
+  n_envs: 8
+  rng_seed: 1234
+  splits: [train, heldout]
+
+# Passed to third_party/dreamerv3/dreamerv3/main.py (logdir, seed, script set by the launcher).
+# The crafter block sets train_ratio 512 and envs 1; overridden here (PLAN.md §2).
+dreamer_flags:
+  configs: [crafter, size1m]
+  run.steps: 100000
+  run.train_ratio: 128
+  run.envs: 4
+  run.eval_envs: 2          # env 0 = train pool, env 1 = held-out pool (launcher)
+  run.eval_eps: 20          # per eval round, split over the two eval envs
+  run.report_every: 900     # seconds between eval rounds (upstream clock is wall time)
+  run.save_every: 600       # seconds (upstream's own latest-only checkpoint, used by wm_eval)
+  run.log_every: 120        # seconds
+  replay.size: 100000
+  jax.platform: cpu
+  jax.compute_dtype: float32  # CPU; bfloat16 (upstream default) not compared yet
+  logger.outputs: [jsonl]

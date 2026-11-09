@@ -7,13 +7,19 @@ Runs upstream `dreamerv3/main.py` unmodified, with two substitutions made from h
     train pool, and the eval driver gets env 0 on the train pool and env 1 on the held-out
     pool (upstream passes the same make_env to both, so an env cannot tell them apart).
   * every env appends its finished episodes to runs/<exp>/dreamerv3/seed<k>/episodes/*.jsonl.
+  * if cfg["ckpt_every_steps"] is set, the agent is also saved every that many env steps (and at
+    step 0 and the end) to runs/<exp>/<method>/seed<k>/ckpt_steps/step_<n>/ (agent only, plus
+    info.json with env_steps and wall_clock_s), for scripts/eval_dreamer.py. Upstream's own
+    checkpoint (logdir/ckpt) is saved on wall time and keeps only the latest.
 Upstream flags come from cfg["dreamer_flags"]; logdir and seed are set here. Afterwards,
 scripts/dreamer_results.py turns the logs into results/ CSVs.
 """
 
 import argparse
+import json
 import os
 import sys
+import time
 from functools import partial
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,6 +49,52 @@ def make_crafter_env(env_cfg, log_dir, role, config, index, **overrides):
     return dreamer_main.wrap_env(env, config)
 
 
+def save_step_checkpoint(agent, root, env_steps, t0):
+    """Write the agent's parameters to <root>/step_<env_steps>/ (same format as upstream)."""
+    import elements
+    path = os.path.join(root, f"step_{env_steps}")
+    if os.path.exists(path):
+        return
+    elements.checkpoint.save(path, dict(agent=agent.save))
+    with open(os.path.join(path, "info.json"), "w") as f:
+        json.dump({"env_steps": env_steps, "wall_clock_s": round(time.time() - t0, 1)}, f)
+    print(f"[train_dreamer] step checkpoint {path}", flush=True)
+
+
+def with_step_checkpoints(make_agent, make_logger, every, root, t0):
+    """Wrap upstream's make_agent / make_logger so the agent saves itself every `every` env
+    steps. The env-step counter is the logger's step (upstream: `step = logger.step`, which the
+    train driver increments once per env step); the check runs before each train-mode policy
+    call, i.e. after the training updates for the steps so far."""
+    state = {"next": 0}
+
+    def make_logger_():
+        state["logger"] = make_logger()
+        return state["logger"]
+
+    def make_agent_():
+        agent = make_agent()
+        state["agent"] = agent
+        policy = agent.policy
+
+        def policy_(carry, obs, mode="train"):
+            if mode == "train" and "logger" in state:
+                steps = int(state["logger"].step)
+                if steps >= state["next"]:
+                    save_step_checkpoint(agent, root, steps, t0)
+                    state["next"] = (steps // every + 1) * every
+            return policy(carry, obs, mode=mode)
+
+        agent.policy = policy_
+        return agent
+
+    def finish():
+        if "agent" in state and "logger" in state:
+            save_step_checkpoint(state["agent"], root, int(state["logger"].step), t0)
+
+    return make_agent_, make_logger_, finish
+
+
 def flags_to_argv(flags):
     argv = []
     for key, value in flags.items():
@@ -67,6 +119,7 @@ def main():
     os.makedirs(results_dir, exist_ok=True)
     meta = RunMeta(cfg, config_path=args.config, device="cpu (jax)")
     meta.data["seed"] = args.seed
+    t0 = time.time()
 
     import embodied
     from dreamerv3 import main as dreamer_main
@@ -74,11 +127,20 @@ def main():
     original = embodied.run.train_eval
 
     def train_eval(make_agent, make_replay_train, make_replay_eval, make_env_train,
-                   make_env_eval, *rest):
+                   make_env_eval, make_stream, make_logger, run_args):
         config = make_env_train.args[0]  # partial(make_env, config)
-        return original(make_agent, make_replay_train, make_replay_eval,
-                        partial(make_crafter_env, cfg["env"], log_dir, "train", config),
-                        partial(make_crafter_env, cfg["env"], log_dir, "eval", config), *rest)
+        finish = None
+        if cfg.get("ckpt_every_steps"):
+            make_agent, make_logger, finish = with_step_checkpoints(
+                make_agent, make_logger, int(cfg["ckpt_every_steps"]),
+                os.path.join(run_dir, "ckpt_steps"), t0)
+        result = original(make_agent, make_replay_train, make_replay_eval,
+                          partial(make_crafter_env, cfg["env"], log_dir, "train", config),
+                          partial(make_crafter_env, cfg["env"], log_dir, "eval", config),
+                          make_stream, make_logger, run_args)
+        if finish:
+            finish()
+        return result
 
     embodied.run.train_eval = train_eval
     argv = flags_to_argv(cfg["dreamer_flags"]) + [

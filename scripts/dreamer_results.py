@@ -11,7 +11,8 @@ so each round's env-step count is interpolated from the train envs' own step cou
 (the driver steps all train envs in lockstep, so global steps ~= n_train_envs x env steps).
 
 Writes results/<exp>/dreamerv3/seed<k>/{eval.csv, eval_episodes.csv, train_episodes.csv,
-dreamer_results.json}.
+dreamer_results.json}. For runs with step checkpoints (cfg["ckpt_every_steps"]) the in-loop eval
+goes to eval_inloop.csv / eval_inloop_episodes.csv, and eval.csv comes from the harness.
 """
 
 import argparse
@@ -103,8 +104,11 @@ def main():
                           ckpt_env_steps=ckpt, wall_clock_s=round(start - t0, 1))
         episodes += [{"ckpt_env_steps": ckpt, **e} for e in eps]
     if rows:
-        write_rows(os.path.join(out_dir, "eval.csv"), rows, "eval")
-        write_rows(os.path.join(out_dir, "eval_episodes.csv"), episodes, list(episodes[0]))
+        # Runs with step checkpoints get their eval.csv from the harness (scripts/eval_dreamer.py),
+        # so the in-loop numbers go to eval_inloop*.csv instead.
+        prefix = "eval_inloop" if cfg.get("ckpt_every_steps") else "eval"
+        write_rows(os.path.join(out_dir, f"{prefix}.csv"), rows, "eval")
+        write_rows(os.path.join(out_dir, f"{prefix}_episodes.csv"), episodes, list(episodes[0]))
     summary = {"eval_source": "dreamerv3 train_eval in-loop eval driver (not the shared "
                               "harness; scripts/eval_dreamer.py scores the final checkpoint)",
                "n_train_envs": n_train_envs, "n_train_episodes": len(train),
