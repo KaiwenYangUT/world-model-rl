@@ -301,7 +301,8 @@ Our shared harness depends only on numpy, crafter, and gymnasium, so it runs in 
 | PPO-LSTM | 0.3–0.5× PPO | 5–20 min | 10–40 min | 25–90 min | 250k: 9–10 min training (404–454 sps, mps + 8 subproc), +~3 min eval; **provisional (load avg 10–20)** |
 | DQN (train_freq 4) | 100–300 sps | 3–8 min | 6–17 min | 14–42 min | 250k: 20–24 min (173–210 sps, mps, 1 env); **provisional** |
 | DreamerV3 size1m, ratio 32 | t_update 0.3–1.5 s | 0.2–0.8 h | 0.3–1.5 h | 0.8–3.5 h | 100k: **93 min** wall incl. 7 eval rounds (fps/train 420–630 replay steps/s ≈ t_update 1.6–2.4 s; peak RSS 9.9 GB); **provisional (shared CPU)** |
-| DreamerV3 size1m, ratio 64 | 2× updates | 0.4–1.5 h | 0.7–3 h | 1.6–7 h | TBD |
+| DreamerV3 size1m, ratio 64 | 2× updates | 0.4–1.5 h | 0.7–3 h | 1.6–7 h | 100k: 2.35 h wall (load avg ~10, other jobs at times); **provisional** |
+| DreamerV3 size1m, ratio 128 | 4× updates | – | – | – | 100k: **4.61 h** wall, only job (≈ 28 min / 10k steps; fps/train ≈ 770 replay steps/s; peak memory 10.5 GB) |
 
 **Totals (guess, including ~20% eval overhead):**
 - B=100k: ≈ 6–10 machine-hours for the main runs (4 methods × 3 seeds) + 3–5 h for the ablation.
@@ -470,6 +471,7 @@ Newest entry first. Template:
 - **Issues / open items:**
   - One seed only.
   - The standard reward pulls DreamerV3 towards the easy achievements; place_table is not one it chases at this budget.
+- README: problems section rewritten with what this run showed (standard reward pulls DreamerV3 to the easy achievements; compute grows with the ratio; DreamerV3 needs >8 GB so it cannot run on the iMac; one seed each for r64/r128; in-loop curves too noisy).
 - **Next:** DreamerV3 sparse-reward ablation at ratio 128 (~4.6 h); if it learns the table, add seeds 1–2.
 
 ### 2026-11-05 (early morning) — overnight runs, continued — MacBook Pro M2 Max

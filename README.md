@@ -103,15 +103,35 @@ More figures: [generalization](figures/main_generalization.png),
 - **Evaluation noise:** 20 episodes per checkpoint gave intervals like 1–24%, so we use 50.
 
 ## Current problems and limitations
-- **DreamerV3 does not learn at our scale.** On this laptop it runs only on the CPU (~18 game
-  steps/s), so we use the smallest model and few training updates (train ratio 32, vs. 512 in
-  the authors' Crafter setting with a much larger model). Doubling the updates (ratio 64)
-  slightly improved the world model but not the policy. With 4× updates (ratio 128, 4.6 h) the
-  policy learns, but chases the easy achievements and not the table (1 seed so far).
-- **DreamerV3 evaluation gaps:** upstream keeps only its latest checkpoint, saved every 30 min,
-  so its final scores come from 70k–96k of 100k steps, and it has no shared-harness learning curve.
+- **DreamerV3 is too small and too slow here.** On this laptop it runs only on the CPU, so we use
+  the smallest model (~0.7M parameters) and few training updates per game step (train ratio 32,
+  vs. 512 in the authors' Crafter setting with a much larger model). At ratio 32 (3 seeds) and
+  ratio 64 (1 seed) its policy stays at random level.
+- **With 4× updates, DreamerV3 learns the wrong things.** At ratio 128 (1 seed) the world model
+  finally sees the unlock rewards and the policy clearly learns, but it goes for the easiest
+  +1s: saplings (97% vs. 51% for random play), wood, water, cows. It never places a table
+  (0 of 100 eval episodes), and its table rate during training falls from 7.6% in the first
+  20k steps to 0% in the last 20k. With the standard reward every achievement is worth the same
+  +1, and placing a table needs a longer chain (two wood, then the right tile), so the cheap
+  ones win at this budget. This is our reading of the numbers, not yet tested; the sparse-reward
+  run below tests it.
+- **DreamerV3 compute grows with the update ratio.** Training time grows roughly in proportion
+  to the ratio: 100k steps take ~1.5 h at ratio 32, 2.35 h at ratio 64 and 4.6 h at ratio 128
+  (~6 game steps/s). Three seeds at ratio 128 are ~14 h, and each further DreamerV3 experiment
+  (sparse reward, more seeds) costs the same again. The authors' ratio 512 would be roughly
+  18 h per run at this size (an extrapolation, not measured).
+- **Only one machine can run DreamerV3.** Its runs peak at 10–11 GB of memory (9.9 GB at
+  ratio 32, 10.5 GB at ratio 128), more than the iMac's 8 GB, so all DreamerV3 runs share the
+  M2 Max with the Stage 4 runs of the other methods, one job at a time.
+- **Few DreamerV3 seeds.** Ratio 64 and ratio 128 have one seed each, so their differences from
+  ratio 32 are not yet confirmed across seeds.
+- **DreamerV3 evaluation gaps.** Upstream keeps only its latest checkpoint, so the shared harness
+  scores only the end of each run: 70k–96k of 100k steps at ratio 32 (saved every 30 min), ~97k
+  at ratio 128 (saved every 10 min). Its learning curves come from the in-loop evaluation, which
+  plays only ~10 episodes per world set per round and is too noisy to say when learning starts.
 - **RQ3 data:** measured on the agent's replay memory, not on a separate set of unseen-world games.
-- **Timing numbers are not reportable yet:** several jobs shared the laptop.
+- **Timing numbers are mostly not reportable yet:** several jobs shared the laptop during the
+  overnight runs. The DreamerV3 ratio-128 run is the exception (it ran alone).
 - **Small study:** default (rl-zoo) settings, no tuning, 3 seeds, 250k steps.
 
 ## Next steps
