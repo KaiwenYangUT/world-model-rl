@@ -11,9 +11,9 @@
   1. Read the preliminary results and decide the Stage 4 budget and settings.
   2. DreamerV3: ratio 128 fixed the world model's unlock prediction and the policy now learns, but it learns the easy achievements, not `place_table` (see results). Next candidates: the sparse-reward ablation at ratio 128 (rewards only the target), then a 2nd/3rd seed of ratio 128.
   3. T15 + T16 proper: held-out trajectories for RQ3.
-  4. Step-indexed DreamerV3 checkpoints (upstream keeps only the latest), so harness learning curves exist for Dreamer too.
+  4. ~~Step-indexed DreamerV3 checkpoints~~ done 2026-11-09 (`ckpt_every_steps` in the config; first used by the sparse ablation run).
   5. Re-time PPO/DQN/PPO-LSTM on an idle machine.
-- **Nothing is running.** The ratio-128 run finished at 03:26 on 2026-11-09.
+- **Running:** DreamerV3 sparse-reward ablation at ratio 128, seed 0 (`configs/ablation_sparse_dreamer_size1m_r128_100k.yaml`), started 13:20 on 2026-11-09, ETA ~18:00 plus ~25 min for the harness eval of 11 step checkpoints. Log: `runs/logs/ablation_sparse_dreamer_r128_seed0.log`. Don't run other jobs on the M2 Max until it finishes (timing, rule 5).
 - **Blockers:** none. **All timings tonight are provisional** (several jobs shared the machine; load avg up to ~100), per CONTRIBUTING.md rule 5.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
@@ -409,7 +409,7 @@ ECE1508_RL_Project/
 | T09 | ★ Plotting scripts against the §7 schema (start with fake CSVs) | `plots/*.py` | schema only | 4–6 h | **yes** | done (first version) | Kevin |
 | T10 | Dreamer launcher registering `CrafterTask`; size1m 2k-step smoke | `train_dreamer.py` | T02, T03 | 4–6 h | yes, with T06–T08 | done | Kevin |
 | T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | done (ratio 32 × 3 seeds, ratio 64 × 1 seed, ratio 128 × 1 seed) | Kevin |
-| T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | done (final checkpoint only; eval reproducible byte for byte) | Kevin |
+| T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | done (every 10k-step checkpoint for runs with `ckpt_every_steps`, else final checkpoint only; eval reproducible byte for byte) | Kevin |
 | T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-state adapter test in `tests/test_sb3_adapter.py`) | Kevin |
 | T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds + 3-step variant) | Kevin |
 | T15 | ★ Held-out trajectory collector | `collect_heldout.py` + npz | T12 | 3–4 h | **yes** | todo | |
@@ -418,7 +418,7 @@ ECE1508_RL_Project/
 | T18 | ★ TA update note (§10) | email text | T04 | 1 h | **yes** | todo | |
 | T19 | ★ README with exact reproduction commands (kept current) | `README.md` | ongoing | ongoing | **yes** | in progress (first version 2026-11-05) | Kevin |
 | T20 | Stage 4 main runs (4 methods × 3 seeds) | `results/main` | T08, T11–T14, gate | 1–2 weeks of nights | split by machine | todo | |
-| T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | in progress (PPO × 3 seeds done; DreamerV3 todo) | Kevin |
+| T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | in progress (PPO × 3 seeds done; DreamerV3 ratio 128 seed 0 running) | Kevin |
 | T22 | ★ Report skeleton + related work | report draft | – | ongoing | **yes** | todo | |
 | T23 | (Optional) CUDA path if a GPU appears | timing comparison | T11 | 2–4 h | yes | todo | |
 | T24 | ★ Multi-machine run sheet + results merge procedure | run sheet in this file | T07 | 1–2 h | **yes** | todo | |
@@ -473,6 +473,11 @@ Newest entry first. Template:
   - The standard reward pulls DreamerV3 towards the easy achievements; place_table is not one it chases at this budget.
 - README: problems section rewritten with what this run showed (standard reward pulls DreamerV3 to the easy achievements; compute grows with the ratio; DreamerV3 needs >8 GB so it cannot run on the iMac; one seed each for r64/r128; in-loop curves too noisy).
 - **Next:** DreamerV3 sparse-reward ablation at ratio 128 (~4.6 h); if it learns the table, add seeds 1–2.
+- **Later the same day:**
+  - Step-indexed DreamerV3 checkpoints: `scripts/train_dreamer.py` wraps upstream's `make_agent` / `make_logger` (no change to `third_party/`) and saves the agent every `ckpt_every_steps` env steps, plus step 0 and the end, to `runs/<exp>/<method>/seed<k>/ckpt_steps/step_<n>/` (~8.5 MB each). The env-step count is upstream's `logger.step`, which the train driver increments once per env step (checked in `embodied/run/train_eval.py`).
+  - `scripts/eval_dreamer.py` scores every step checkpoint with the shared harness and writes `eval.csv` / `eval_episodes.csv` / `eval_meta.json` like `scripts/eval.py`; for these runs `dreamer_results.py` writes the in-loop eval to `eval_inloop*.csv`. Plots and the summary label a curve "in-loop" only when `eval_meta.json` is missing.
+  - Smoke test (2.5k steps, checkpoint every 1k): 4 checkpoints written; weights differ between checkpoints; harness episodes change once training starts; harness re-run byte-identical; 30 tests pass.
+  - Started the sparse-reward ratio-128 run (seed 0) at 13:20.
 
 ### 2026-11-05 (early morning) — overnight runs, continued — MacBook Pro M2 Max
 - **Completed after the entry below:**
