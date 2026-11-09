@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from plot_learning_curves import (  # noqa: E402
+    INLOOP,
     METHODS,
     REPO_ROOT,
     SURFACE,
@@ -28,6 +29,8 @@ from plot_learning_curves import (  # noqa: E402
     random_baseline,
     style,
 )
+
+INLOOP_BY_EXP = {}  # exp -> methods whose eval.csv there is DreamerV3's in-loop eval
 
 # Categorical slots 1 and 2 (dataviz reference palette, light mode).
 EXPS = {"main": ("standard reward", "#2a78d6"), "ablation_sparse": ("sparse reward", "#eb6834")}
@@ -42,15 +45,18 @@ def main():
     style(ax, f"{name}: place_table success, standard vs target-only sparse reward",
           "success rate")
     for exp, (label, color) in EXPS.items():
+        INLOOP.clear()
         per_method = load_eval(exp).get(args.method, {})
+        INLOOP_BY_EXP[exp] = set(INLOOP)
         for split, ls in (("train", "-"), ("heldout", "--")):
             per_seed = per_method.get(("place_table", split))
             if not per_seed:
                 continue
             steps, table = curve(per_seed, 0)
             n = len(per_seed)
+            note = " [in-loop eval]" if args.method in INLOOP_BY_EXP[exp] else ""
             draw(ax, steps, table, color, ls,
-                 f"{label}, {'train' if split == 'train' else 'held-out'} worlds (n={n})")
+                 f"{label}, {'train' if split == 'train' else 'held-out'} worlds (n={n}){note}")
     rand = random_baseline()[0]["place_table"]
     ax.axhline(rand, color="#8a8984", linestyle=":", linewidth=1.5,
                label=f"random policy ({rand:.1%})")

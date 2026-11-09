@@ -4,7 +4,7 @@ ECE1508 reinforcement learning course project. We compare four reinforcement-lea
 methods on **Crafter**, a 2D Minecraft-like game with sparse rewards and a partial view of
 the world, under the same budget of game steps and the same evaluation code.
 
-**Status (2026-11-09):** preliminary results exist for all three research questions.
+**Status (2026-11-09, evening):** preliminary results exist for all three research questions.
 Final experiments run Nov 16 – Dec 4; results freeze on Dec 6.
 Full plan, decisions and run log: [PLAN.md](PLAN.md).
 
@@ -50,7 +50,7 @@ Full plan, decisions and run log: [PLAN.md](PLAN.md).
 3. **Experiments (preliminary).**
    - PPO, PPO-LSTM, DQN and DQN 3-step: 250k steps × 3 seeds each.
    - DreamerV3: 100k steps × 3 seeds, plus one run each with 2× and 4× training updates.
-   - A reward-sparsity ablation for PPO.
+   - A reward-sparsity ablation for PPO (3 seeds) and for DreamerV3 with 4× updates (1 seed).
    - PPO at 1M steps, to compare with the Crafter paper.
    - World-model error vs. imagination horizon for every DreamerV3 run.
 
@@ -68,12 +68,19 @@ Success = placing a table. Final = last two checkpoints of each of 3 seeds, pool
 | DreamerV3 (smallest) | 100k | 4.7% [2–9] | 2.7% [1–7] | – |
 | DreamerV3, 4× updates (1 seed) | 100k | 0% [0–7] | 0% [0–7] | – |
 | PPO, sparse reward (ablation) | 250k | 96.0% [93–98] | 82.3% [78–86] | +14 pts |
+| DreamerV3, 4× updates, sparse reward (1 seed) | 100k | 14.0% [9–22] | 15.0% [9–23] | ≈0 |
+
+DreamerV3 rows with 1 seed pool 100 episodes per world set (3 seeds: 150, from the final
+checkpoints only).
 
 - **RQ1:** PPO learns fastest. Memory (PPO-LSTM) does not help at this budget. Plain DQN is
   unreliable across seeds; 3-step returns fix that. DreamerV3 at this size stays at random level
   with the default number of updates. With 4× updates it does learn (it collects saplings 97% of
   the time vs. 51% for random play, wood 41% vs. 21%) but goes for these easy achievements and
-  never places a table.
+  never places a table. When it is rewarded only for the table (sparse reward), it does learn
+  the task, but late: it stays at random level until ~90k steps, then reaches 20% / 26%
+  (training / unseen worlds) at 100k ([figure](figures/ablation_sparse_dreamerv3_r128.png)).
+  PPO with the same sparse reward is at 49% / 39% at 100k (3 seeds).
 - **RQ2:** agents that learn do 5–10 points worse on unseen worlds. Both curves match until
   ~100k steps; after that, training-world success rises faster. Unseen-world success still
   rises with more training (PPO at 1M: 94% training, 87% unseen).
@@ -82,7 +89,10 @@ Success = placing a table. Final = last two checkpoints of each of 3 seeds, pool
   Its policy learns only from those predictions, so it gets no signal for the task. With 4×
   updates the world model catches 30% of unlocks while watching and 10–60% while imagining up
   to 16 steps ahead ([figure](figures/main_wm_error_dreamerv3_r128.png)), and that is when its
-  policy starts to learn.
+  policy starts to learn. With the sparse reward the reward predictor again misses every table
+  reward, yet the policy still learns the table. Our explanation (not yet tested): DreamerV3's
+  value network is also trained on the real rewards stored in replay (the `repval` loss in
+  `dreamerv3/agent.py`), so the reward reaches the policy through the value network instead.
 - **Against published work:** scored the way the Crafter paper scores it (success over all
   training episodes), our PPO at 1M steps gets 86% / 73% / 40% on collect wood / place table /
   make wood pickaxe vs. the paper's 83% / 66% / 21%. Our random baseline also matches the paper's.
@@ -90,10 +100,16 @@ Success = placing a table. Final = last two checkpoints of each of 3 seeds, pool
 ![Learning curves](figures/main_learning_curves.png)
 
 More figures: [generalization](figures/main_generalization.png),
-[reward ablation](figures/ablation_sparse_ppo_cnn.png),
+[reward ablation, PPO](figures/ablation_sparse_ppo_cnn.png),
+[reward ablation, DreamerV3](figures/ablation_sparse_dreamerv3_r128.png),
 [world-model error](figures/main_wm_error.png). Full table: [results/main/summary.md](results/main/summary.md).
 
 ## Problems found and fixed
+- **No DreamerV3 learning curves:** upstream keeps only its latest checkpoint. Our launcher now
+  also saves the agent every 10k game steps, and every one is scored by the shared harness
+  (first used for the sparse-reward run). The first version also saved a near-copy 8 steps after
+  the 100k checkpoint, which would have counted the end of training twice in "last 2
+  checkpoints"; it now skips that, and the copy was left out of the results.
 - **Crafter was not reproducible:** the same world seed and actions could give different games.
   The cause was Python set ordering when despawning creatures. Our wrapper fixes it, and tests cover it.
 - **World generation was the bottleneck:** 0.5 s per reset. Caching each world per seed cut it
@@ -125,23 +141,32 @@ More figures: [generalization](figures/main_generalization.png),
   M2 Max with the Stage 4 runs of the other methods, one job at a time.
 - **Few DreamerV3 seeds.** Ratio 64 and ratio 128 have one seed each, so their differences from
   ratio 32 are not yet confirmed across seeds.
-- **DreamerV3 evaluation gaps.** Upstream keeps only its latest checkpoint, so the shared harness
-  scores only the end of each run: 70k–96k of 100k steps at ratio 32 (saved every 30 min), ~97k
-  at ratio 128 (saved every 10 min). Its learning curves come from the in-loop evaluation, which
-  plays only ~10 episodes per world set per round and is too noisy to say when learning starts.
+- **DreamerV3 learns the table too late in 100k steps.** With the sparse reward it reaches 20%
+  only at the last checkpoint, so "final" (the last two checkpoints, 90k and 100k) is 14% / 15%,
+  and we don't know where it would level off. A longer run would tell (our guess: higher).
+- **DreamerV3's reward predictor misses the rewards that matter.** Even when the policy learns
+  the table, the world model never predicts the table reward (sparse run). RQ3 has to report
+  this, and the value-network explanation above still needs checking.
+- **DreamerV3 evaluation gaps (older runs).** The runs before the sparse-reward run have only
+  their latest checkpoint scored by the harness (70k–97k of 100k steps), and their learning
+  curves come from the in-loop evaluation, which plays only ~10 episodes per world set per round
+  and is too noisy to say when learning starts. Re-running them with step checkpoints fixes this.
 - **RQ3 data:** measured on the agent's replay memory, not on a separate set of unseen-world games.
 - **Timing numbers are mostly not reportable yet:** several jobs shared the laptop during the
-  overnight runs. The DreamerV3 ratio-128 run is the exception (it ran alone).
+  overnight runs. The DreamerV3 ratio-128 run is the exception (it ran alone). The sparse-reward
+  run is not: a power outage put the laptop on battery for part of it, and one 10k-step stretch
+  took 37 min instead of 28.
 - **Small study:** default (rl-zoo) settings, no tuning, 3 seeds, 250k steps.
 
 ## Next steps
 1. **DreamerV3:**
-   - Run its sparse-reward ablation at 4× updates, which rewards only the table; if it
-     learns, add two more seeds.
-   - Otherwise, time the next model size (12M parameters) before committing to it.
+   - The sparse-reward run learned the table only at the very end. Next: seeds 1 and 2 of it
+     (~9.5 h), and one longer run (200k steps, ~9.5 h) to see where it levels off.
+   - Re-run the standard-reward ratio-128 run with step checkpoints, so both reward settings
+     have harness learning curves.
+   - Time the next model size (12M parameters) before committing to it.
    - Look for an NVIDIA GPU (university cluster or cloud), which DreamerV3 is built for.
 2. **Measurement:**
-   - Save DreamerV3 checkpoints by step count, so it gets proper learning curves.
    - Collect separate unseen-world games for RQ3.
    - Re-time all methods on an idle machine.
 3. **Final experiments (Nov 16 – Dec 4):**

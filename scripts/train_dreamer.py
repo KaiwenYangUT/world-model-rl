@@ -66,7 +66,7 @@ def with_step_checkpoints(make_agent, make_logger, every, root, t0):
     steps. The env-step counter is the logger's step (upstream: `step = logger.step`, which the
     train driver increments once per env step); the check runs before each train-mode policy
     call, i.e. after the training updates for the steps so far."""
-    state = {"next": 0}
+    state = {"next": 0, "last": None}
 
     def make_logger_():
         state["logger"] = make_logger()
@@ -82,6 +82,7 @@ def with_step_checkpoints(make_agent, make_logger, every, root, t0):
                 steps = int(state["logger"].step)
                 if steps >= state["next"]:
                     save_step_checkpoint(agent, root, steps, t0)
+                    state["last"] = steps
                     state["next"] = (steps // every + 1) * every
             return policy(carry, obs, mode=mode)
 
@@ -89,8 +90,13 @@ def with_step_checkpoints(make_agent, make_logger, every, root, t0):
         return agent
 
     def finish():
+        # Final save, unless a grid checkpoint was saved within half an interval of the end
+        # (the train driver runs 10 steps per call, so a run of 100k steps ends at ~100,008
+        # right after the step_100000 save; a near-duplicate would count twice in "last 2").
         if "agent" in state and "logger" in state:
-            save_step_checkpoint(state["agent"], root, int(state["logger"].step), t0)
+            steps = int(state["logger"].step)
+            if state["last"] is None or steps - state["last"] >= every // 2:
+                save_step_checkpoint(state["agent"], root, steps, t0)
 
     return make_agent_, make_logger_, finish
 
