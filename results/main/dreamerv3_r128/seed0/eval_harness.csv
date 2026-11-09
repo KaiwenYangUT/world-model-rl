@@ -1,0 +1,7 @@
+exp,method,seed,ckpt_env_steps,wall_clock_s,split,n_episodes,success_rate,success_ci_lo,success_ci_hi,mean_return,mean_len,mean_steps_to_success,target,reward_mode
+main,dreamerv3_r128,0,97283,16249.0,train,50,0.46,0.3297,0.596,1.84,182.6,81.26,collect_wood,crafter
+main,dreamerv3_r128,0,97283,16249.0,train,50,0.0,0.0,0.0714,1.84,182.6,,place_table,crafter
+main,dreamerv3_r128,0,97283,16249.0,train,50,0.0,0.0,0.0714,1.84,182.6,,make_wood_pickaxe,crafter
+main,dreamerv3_r128,0,97283,16249.0,heldout,50,0.36,0.2414,0.4986,1.84,166.78,93.28,collect_wood,crafter
+main,dreamerv3_r128,0,97283,16249.0,heldout,50,0.0,0.0,0.0714,1.84,166.78,,place_table,crafter
+main,dreamerv3_r128,0,97283,16249.0,heldout,50,0.0,0.0,0.0714,1.84,166.78,,make_wood_pickaxe,crafter

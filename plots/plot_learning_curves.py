@@ -146,9 +146,9 @@ def main():
                  "mean over seeds, band = min..max",
                  x=0.01, ha="left", fontsize=10, color=INK_2)
     handles, labels = axes.flat[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=min(4, len(labels)), fontsize=8.5,
+    fig.legend(handles, labels, loc="lower center", ncol=min(3, len(labels)), fontsize=8.5,
                frameon=False, labelcolor=INK_2)
-    rows = -(-len(labels) // 4)
+    rows = -(-len(labels) // 3)
     fig.tight_layout(rect=(0, 0.035 * rows + 0.01, 1, 0.96))
     os.makedirs(os.path.join(REPO_ROOT, "figures"), exist_ok=True)
     suffix = "" if splits == ["train"] else "_" + "_".join(splits)

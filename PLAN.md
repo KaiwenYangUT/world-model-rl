@@ -5,15 +5,15 @@
 > Statuses: `todo` · `in progress` · `done` · `blocked`.
 
 ## Current status
-- **Date:** 2026-11-04 (overnight session)
-- **Stage:** Stages 0–3 done in preliminary form on the M2 Max. All four methods ran through the pipeline, and **preliminary results exist for RQ1, RQ2, and RQ3** (see *Preliminary results* below). The week-1 gate (§6) passes for PPO and DreamerV3.
+- **Date:** 2026-11-09
+- **Stage:** Stages 0–3 done in preliminary form on the M2 Max. All four methods ran through the pipeline, and **preliminary results exist for RQ1, RQ2, and RQ3** (see *Preliminary results* below). The week-1 gate (§6) passes for PPO and DreamerV3. Repo is on GitHub (`KaiwenYangUT/world-model-rl`).
 - **Next action:**
   1. Read the preliminary results and decide the Stage 4 budget and settings.
-  2. DreamerV3 policy learning: the ratio-64 run decides whether more updates help (see results).
+  2. DreamerV3: ratio 128 fixed the world model's unlock prediction and the policy now learns, but it learns the easy achievements, not `place_table` (see results). Next candidates: the sparse-reward ablation at ratio 128 (rewards only the target), then a 2nd/3rd seed of ratio 128.
   3. T15 + T16 proper: held-out trajectories for RQ3.
   4. Step-indexed DreamerV3 checkpoints (upstream keeps only the latest), so harness learning curves exist for Dreamer too.
-  5. Re-time on an idle machine.
-- **Nothing is running.** All overnight runs finished by 03:45 on 2026-11-05.
+  5. Re-time PPO/DQN/PPO-LSTM on an idle machine.
+- **Nothing is running.** The ratio-128 run finished at 03:26 on 2026-11-09.
 - **Blockers:** none. **All timings tonight are provisional** (several jobs shared the machine; load avg up to ~100), per CONTRIBUTING.md rule 5.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
@@ -38,6 +38,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
 | DQN 3-step (try 2) | 3 | 47.0% [41.4, 52.7] | 37.0% [31.7, 42.6] | +10.0 | 3.88 | pass |
 | DreamerV3 size1m, ratio 32, 100k | 3 | 4.7% [2.3, 9.3] (harness, latest ckpts ≈ 96k / 70k / 79k, n=150) | 2.7% [1.0, 6.7] | +2.0 | 1.37 | "completing": pass; learning: no |
 | DreamerV3 size1m, **ratio 64**, 100k | 1 | 2.0% (harness, latest ckpt ≈ 85k, n=50) | 6.0% | – | 0.56 | "completing": pass; learning: no |
+| DreamerV3 size1m, **ratio 128**, 100k | 1 | 0.0% [0.0, 7.1] (harness, latest ckpt ≈ 97k, n=50) | 0.0% [0.0, 7.1] | – | 1.84 | "completing": pass; learning: yes, but not the target |
 | PPO, **sparse reward** (ablation) | 3 | **96.0%** [93.1, 97.7] | 82.3% [77.6, 86.2] | +13.7 | – | – |
 
 - **RQ1 (learning efficiency):**
@@ -45,7 +46,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
   - PPO-LSTM is slower and lower (45%).
   - DQN is slow and seed-dependent: one seed stays at random level, one reaches ~50% after 150k.
   - 3-step returns plus longer exploration (DQN try 2) raise DQN to 47% (3 seeds), close to PPO-LSTM.
-  - DreamerV3 at size1m does not learn a policy in 100k steps at train ratio 32 (3 seeds) or 64 (1 seed).
+  - DreamerV3 at size1m does not learn a policy in 100k steps at train ratio 32 (3 seeds) or 64 (1 seed). At ratio 128 (1 seed) it learns the easy achievements but not `place_table` (below).
 - **RQ2 (generalization):**
   - Held-out success is lower than train for PPO (+10 pp gap, CIs barely overlap), DQN 3-step (+10, CIs barely overlap), PPO-LSTM (+4.7), and sparse-reward PPO (+13.7, CIs disjoint).
   - The gap opens after ~100k steps (`figures/main_learning_curves_train_heldout.png`).
@@ -61,6 +62,11 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
   - Open-loop unlock recall is still 0.
   - The policy is still at random level (2% / 6%).
   - So doubling the ratio is not enough at 100k steps. Candidates: a larger model (size12m+), ratio ≥ 128, a longer budget, or the sparse reward (see the PPO ablation).
+- **DreamerV3 at train ratio 128** (1 seed, `configs/dreamer_size1m_r128_100k.yaml`, 4.61 h wall, the only job on the machine; load avg 2 at start):
+  - **World model now predicts unlocks.** Unlock recall at the posterior is 0.30 (precision 0.85) on the training replay and 0.30 (precision 0.98) on the eval replay, vs 0.05 at ratio 64 and 0 at ratio 32. Open-loop recall stays at 0.1–0.6 over k = 1..16 instead of 0 (`figures/main_wm_error_dreamerv3_r128.png`). Final losses: reward 0.18 (r64 0.20), image 86 (r64 107).
+  - **The policy learns, but not the target.** Harness eval of the ≈ 97k checkpoint (n=50 per split) vs the random policy (n=400): collect_sapling 97% vs 51%, collect_wood 41% vs 21%, collect_drink 23% vs 8%, eat_cow 8% vs 1%, defeat_zombie 7% vs 0%; return 1.84 vs 1.32. But `place_table` is 0/100, and in training episodes its rate falls from 7.6% (first 20k steps) to 0/111 (last 20k).
+  - Reading (guess): with the standard reward, the cheapest +1s (sapling, wood, drink) dominate what the actor sees in imagination, and nothing pushes it to keep wood and place a table. This is the case for the sparse-reward DreamerV3 ablation, which PPO says is worth +34 pp.
+  - Compute: policy fps 6.0 vs 11.9 at ratio 64 (train fps ≈ 770 replayed steps/s in both), so wall-clock scales about linearly with the ratio.
 - **Sanity check against the literature: PPO at 1M steps** (1 seed, `configs/ppo_cnn_1m.yaml`, `results/budget1m/`; 18 min training).
   - Harness eval of the final checkpoints: place_table 94% train / 87% held-out, collect_wood 100%, make_wood_pickaxe 74–78%.
   - Paper-style metric (success over all 5,151 training episodes in the budget, as the Crafter paper reports it): collect_wood 86.4% / place_table 72.9% / make_wood_pickaxe 40.1%, vs the paper's PPO at 1M of 83.0 / 66.1 / 21.1%.
@@ -401,7 +407,7 @@ ECE1508_RL_Project/
 | T08 | PPO 100k run + eval → **first result** | `results/ppo_cnn`, plot | T07, T09 | 0.5 day | – | done (250k × 3 seeds) | Kevin |
 | T09 | ★ Plotting scripts against the §7 schema (start with fake CSVs) | `plots/*.py` | schema only | 4–6 h | **yes** | done (first version) | Kevin |
 | T10 | Dreamer launcher registering `CrafterTask`; size1m 2k-step smoke | `train_dreamer.py` | T02, T03 | 4–6 h | yes, with T06–T08 | done | Kevin |
-| T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | done (ratio 32 × 3 seeds, ratio 64 × 1 seed) | Kevin |
+| T11 | Dreamer 50–100k run + throughput report | `results/dreamer`, §5 measured | T10 | 0.5 day + overnight | – | done (ratio 32 × 3 seeds, ratio 64 × 1 seed, ratio 128 × 1 seed) | Kevin |
 | T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | done (final checkpoint only; eval reproducible byte for byte) | Kevin |
 | T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-state adapter test in `tests/test_sb3_adapter.py`) | Kevin |
 | T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds + 3-step variant) | Kevin |
@@ -449,6 +455,22 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-09 — DreamerV3 ratio 128; repo published — MacBook Pro M2 Max
+- **Completed:**
+  - README for teammates (key terms, results, problems fixed, limitations, next steps) and CONTRIBUTING.md with the project rules.
+  - Repo pushed to GitHub (`KaiwenYangUT/world-model-rl`).
+  - DreamerV3 size1m at train ratio 128, 100k steps, seed 0 (`configs/dreamer_size1m_r128_100k.yaml`; checkpoint every 10 min instead of 30, so the final one is at ≈ 97k), then log conversion, `wm_eval`, and harness eval.
+  - Summary table and figures refreshed (`results/main/summary.md`, `figures/main_*.png`, new `figures/main_wm_error_dreamerv3_r128.png`); learning-curve legend now 3 columns so long labels fit.
+- **Measurements:**
+  - Wall-clock 16,610 s (4.61 h) for 100k steps, ≈ 28 min per 10k steps; only job running (load avg 2.1 at start, ~9.8 during the run from DreamerV3's own threads). Peak memory 10.5 GB.
+  - Harness, ≈ 97k ckpt: place_table 0% / 0% (n=50 each), collect_wood 46% / 36%, return 1.84 (random 1.32).
+  - Learning observed: **yes, but not on the target.** Unlock rates vs random: collect_sapling 97% vs 51%, collect_wood 41% vs 21%, collect_drink 23% vs 8%, eat_cow 8% vs 1%, defeat_zombie 7% vs 0%. place_table in training episodes falls 7.6% → 0%.
+  - RQ3: unlock recall at the posterior 0.30 (was 0.05 at r64, 0 at r32); open-loop recall 0.1–0.6 over k = 1..16 (was 0).
+- **Issues / open items:**
+  - One seed only.
+  - The standard reward pulls DreamerV3 towards the easy achievements; place_table is not one it chases at this budget.
+- **Next:** DreamerV3 sparse-reward ablation at ratio 128 (~4.6 h); if it learns the table, add seeds 1–2.
 
 ### 2026-11-05 (early morning) — overnight runs, continued — MacBook Pro M2 Max
 - **Completed after the entry below:**

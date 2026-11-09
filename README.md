@@ -4,7 +4,7 @@ ECE1508 reinforcement learning course project. We compare four reinforcement-lea
 methods on **Crafter**, a 2D Minecraft-like game with sparse rewards and a partial view of
 the world, under the same budget of game steps and the same evaluation code.
 
-**Status (2026-11-08):** preliminary results exist for all three research questions.
+**Status (2026-11-09):** preliminary results exist for all three research questions.
 Final experiments run Nov 16 – Dec 4; results freeze on Dec 6.
 Full plan, decisions and run log: [PLAN.md](PLAN.md).
 
@@ -49,7 +49,7 @@ Full plan, decisions and run log: [PLAN.md](PLAN.md).
    Every run records its git commit, config and hardware.
 3. **Experiments (preliminary).**
    - PPO, PPO-LSTM, DQN and DQN 3-step: 250k steps × 3 seeds each.
-   - DreamerV3: 100k steps × 3 seeds, plus one run with 2× training updates.
+   - DreamerV3: 100k steps × 3 seeds, plus one run each with 2× and 4× training updates.
    - A reward-sparsity ablation for PPO.
    - PPO at 1M steps, to compare with the Crafter paper.
    - World-model error vs. imagination horizon for every DreamerV3 run.
@@ -66,16 +66,23 @@ Success = placing a table. Final = last two checkpoints of each of 3 seeds, pool
 | DQN | 250k | 16.3% [13–21] (learns on 1 of 3 seeds) | 17.7% [14–22] | ≈0 |
 | DQN, 3-step returns | 250k | 47.0% [41–53] | 37.0% [32–43] | +10 pts |
 | DreamerV3 (smallest) | 100k | 4.7% [2–9] | 2.7% [1–7] | – |
+| DreamerV3, 4× updates (1 seed) | 100k | 0% [0–7] | 0% [0–7] | – |
 | PPO, sparse reward (ablation) | 250k | 96.0% [93–98] | 82.3% [78–86] | +14 pts |
 
 - **RQ1:** PPO learns fastest. Memory (PPO-LSTM) does not help at this budget. Plain DQN is
-  unreliable across seeds; 3-step returns fix that. DreamerV3 at this size stays at random level.
+  unreliable across seeds; 3-step returns fix that. DreamerV3 at this size stays at random level
+  with the default number of updates. With 4× updates it does learn (it collects saplings 97% of
+  the time vs. 51% for random play, wood 41% vs. 21%) but goes for these easy achievements and
+  never places a table.
 - **RQ2:** agents that learn do 5–10 points worse on unseen worlds. Both curves match until
   ~100k steps; after that, training-world success rises faster. Unseen-world success still
   rises with more training (PPO at 1M: 94% training, 87% unseen).
 - **RQ3:** DreamerV3's world model learns the images and the average reward, but never predicts
   the +1 reward for unlocking an achievement, even while watching real frames (3 of 3 seeds).
-  Its policy learns only from those predictions, so it gets no signal for the task.
+  Its policy learns only from those predictions, so it gets no signal for the task. With 4×
+  updates the world model catches 30% of unlocks while watching and 10–60% while imagining up
+  to 16 steps ahead ([figure](figures/main_wm_error_dreamerv3_r128.png)), and that is when its
+  policy starts to learn.
 - **Against published work:** scored the way the Crafter paper scores it (success over all
   training episodes), our PPO at 1M steps gets 86% / 73% / 40% on collect wood / place table /
   make wood pickaxe vs. the paper's 83% / 66% / 21%. Our random baseline also matches the paper's.
@@ -99,7 +106,8 @@ More figures: [generalization](figures/main_generalization.png),
 - **DreamerV3 does not learn at our scale.** On this laptop it runs only on the CPU (~18 game
   steps/s), so we use the smallest model and few training updates (train ratio 32, vs. 512 in
   the authors' Crafter setting with a much larger model). Doubling the updates (ratio 64)
-  slightly improved the world model but not the policy.
+  slightly improved the world model but not the policy. With 4× updates (ratio 128, 4.6 h) the
+  policy learns, but chases the easy achievements and not the table (1 seed so far).
 - **DreamerV3 evaluation gaps:** upstream keeps only its latest checkpoint, saved every 30 min,
   so its final scores come from 70k–96k of 100k steps, and it has no shared-harness learning curve.
 - **RQ3 data:** measured on the agent's replay memory, not on a separate set of unseen-world games.
@@ -108,10 +116,10 @@ More figures: [generalization](figures/main_generalization.png),
 
 ## Next steps
 1. **DreamerV3:**
-   - Train 4× more per game step (train ratio 128, ~4.5 h).
-   - If that fails, time the next model size (12M parameters) before committing to it.
+   - Run its sparse-reward ablation at 4× updates, which rewards only the table; if it
+     learns, add two more seeds.
+   - Otherwise, time the next model size (12M parameters) before committing to it.
    - Look for an NVIDIA GPU (university cluster or cloud), which DreamerV3 is built for.
-   - Run its sparse-reward ablation.
 2. **Measurement:**
    - Save DreamerV3 checkpoints by step count, so it gets proper learning curves.
    - Collect separate unseen-world games for RQ3.
