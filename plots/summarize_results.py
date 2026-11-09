@@ -29,7 +29,8 @@ from rlproj.eval.metrics import (  # noqa: E402
 
 TARGET = "place_table"
 NAMES = {"ppo_cnn": "PPO", "ppo_lstm": "PPO-LSTM", "dqn": "DQN", "dreamerv3": "DreamerV3",
-         "dqn_nstep3": "DQN 3-step", "dreamerv3_r64": "DreamerV3 ratio 64"}
+         "dqn_nstep3": "DQN 3-step", "dreamerv3_r64": "DreamerV3 ratio 64",
+         "dreamerv3_r128": "DreamerV3 ratio 128"}
 
 
 def read_csv(path):
