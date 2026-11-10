@@ -1,0 +1,98 @@
+{
+  "started": "2026-11-10T06:23:27-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-dreamer/bin/python",
+    "scripts/eval_dreamer.py",
+    "--config",
+    "configs/ablation_sparse_dreamer_size1m_r128_100k.yaml",
+    "--seed",
+    "2"
+  ],
+  "config_path": "configs/ablation_sparse_dreamer_size1m_r128_100k.yaml",
+  "config": {
+    "exp": "ablation_sparse",
+    "method": "dreamerv3_r128",
+    "env": {
+      "target": "place_table",
+      "reward_mode": "sparse",
+      "length": 10000
+    },
+    "ckpt_every_steps": 10000,
+    "eval": {
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    },
+    "dreamer_flags": {
+      "configs": [
+        "crafter",
+        "size1m"
+      ],
+      "run.steps": 100000,
+      "run.train_ratio": 128,
+      "run.envs": 4,
+      "run.eval_envs": 2,
+      "run.eval_eps": 20,
+      "run.report_every": 900,
+      "run.save_every": 600,
+      "run.log_every": 120,
+      "replay.size": 100000,
+      "jax.platform": "cpu",
+      "jax.compute_dtype": "float32",
+      "logger.outputs": [
+        "jsonl"
+      ]
+    }
+  },
+  "git": {
+    "commit": "7dc635815f652976e9e9eb132a0603dd71f9bb72",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "cpu (jax)",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "1.26.4",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "jax": "0.4.33",
+    "jaxlib": "0.4.33"
+  },
+  "load_avg_start": [
+    9.17724609375,
+    9.3916015625,
+    9.427734375
+  ],
+  "seed": 2,
+  "finished": "2026-11-10T06:28:01-05:00",
+  "wall_clock_s": 274.43,
+  "load_avg_end": [
+    3.11279296875,
+    5.62158203125,
+    7.65625
+  ],
+  "n_checkpoints": 11,
+  "eval_wall_clock_s": 264.2,
+  "eval": {
+    "n_episodes": 50,
+    "n_envs": 8,
+    "rng_seed": 1234,
+    "splits": [
+      "train",
+      "heldout"
+    ]
+  }
+}

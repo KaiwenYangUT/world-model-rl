@@ -5,15 +5,15 @@
 > Statuses: `todo` · `in progress` · `done` · `blocked`.
 
 ## Current status
-- **Date:** 2026-11-09
+- **Date:** 2026-11-10
 - **Stage:** Stages 0–3 done in preliminary form on the M2 Max. All four methods ran through the pipeline, and **preliminary results exist for RQ1, RQ2, and RQ3** (see *Preliminary results* below). The week-1 gate (§6) passes for PPO and DreamerV3. Repo is on GitHub (`KaiwenYangUT/world-model-rl`).
 - **Next action:**
   1. Read the preliminary results and decide the Stage 4 budget and settings.
-  2. DreamerV3: with the sparse reward at ratio 128 it learns `place_table`, but only from ~90k steps (14% / 15% final, 20% / 26% at 100k; 1 seed). Next: seeds 1–2 of that run (~9.5 h) and one 200k-step run (~9.5 h) to see where it levels off; re-run standard-reward ratio 128 with step checkpoints for a harness curve.
+  2. DreamerV3: with the sparse reward at ratio 128 it learns `place_table`, but only from ~80–90k steps (3 seeds: 17.7% / 17.0% final, 24.7% / 22.7% at 100k). Next: one 200k-step run (~9.5 h) to see where it levels off; re-run standard-reward ratio 128 with step checkpoints for a harness curve.
   3. T15 + T16 proper: held-out trajectories for RQ3.
   4. ~~Step-indexed DreamerV3 checkpoints~~ done 2026-11-09 (`ckpt_every_steps` in the config; first used by the sparse ablation run).
   5. Re-time PPO/DQN/PPO-LSTM on an idle machine.
-- **Nothing is running.** The DreamerV3 sparse-reward ratio-128 run finished at 18:10 on 2026-11-09.
+- **Nothing is running.** DreamerV3 sparse-reward ratio-128 seeds 1 and 2 finished at 06:28 on 2026-11-10.
 - **Blockers:** none. **All timings tonight are provisional** (several jobs shared the machine; load avg up to ~100), per CONTRIBUTING.md rule 5.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
@@ -40,7 +40,7 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
 | DreamerV3 size1m, **ratio 64**, 100k | 1 | 2.0% (harness, latest ckpt ≈ 85k, n=50) | 6.0% | – | 0.56 | "completing": pass; learning: no |
 | DreamerV3 size1m, **ratio 128**, 100k | 1 | 0.0% [0.0, 7.1] (harness, latest ckpt ≈ 97k, n=50) | 0.0% [0.0, 7.1] | – | 1.84 | "completing": pass; learning: yes, but not the target |
 | PPO, **sparse reward** (ablation) | 3 | **96.0%** [93.1, 97.7] | 82.3% [77.6, 86.2] | +13.7 | – | – |
-| DreamerV3 size1m ratio 128, **sparse reward** (ablation), 100k | 1 | 14.0% [8.5, 22.1] (harness, step ckpts 90k + 100k, n=100) | 15.0% [9.3, 23.3] | −1.0 | – | learning: yes, from ~90k |
+| DreamerV3 size1m ratio 128, **sparse reward** (ablation), 100k | 3 | 17.7% [13.8, 22.4] (harness, step ckpts 90k + 100k, n=300) | 17.0% [13.2, 21.7] | +0.7 | – | learning: yes, from ~80–90k (3 of 3 seeds) |
 
 - **RQ1 (learning efficiency):**
   - PPO learns fastest and best: `place_table` goes 4% → 62% in 250k. The Crafter paper reports 66% for PPO at 1M.
@@ -68,12 +68,14 @@ Setting: Crafter, target `place_table`, standard reward unless stated, 250k env 
   - **The policy learns, but not the target.** Harness eval of the ≈ 97k checkpoint (n=50 per split) vs the random policy (n=400): collect_sapling 97% vs 51%, collect_wood 41% vs 21%, collect_drink 23% vs 8%, eat_cow 8% vs 1%, defeat_zombie 7% vs 0%; return 1.84 vs 1.32. But `place_table` is 0/100, and in training episodes its rate falls from 7.6% (first 20k steps) to 0/111 (last 20k).
   - Reading (guess): with the standard reward, the cheapest +1s (sapling, wood, drink) dominate what the actor sees in imagination, and nothing pushes it to keep wood and place a table. This is the case for the sparse-reward DreamerV3 ablation, which PPO says is worth +34 pp.
   - Compute: policy fps 6.0 vs 11.9 at ratio 64 (train fps ≈ 770 replayed steps/s in both), so wall-clock scales about linearly with the ratio.
-- **DreamerV3 ratio 128 with the sparse reward** (1 seed, `configs/ablation_sparse_dreamer_size1m_r128_100k.yaml`, `results/ablation_sparse/dreamerv3_r128/`; first run with harness-scored step checkpoints, `figures/ablation_sparse_dreamerv3_r128.png`):
-  - **It learns the target, late.** Harness place_table (n=50 per split): 0–10% on every checkpoint from 0 to 90k (random 2% / 4.5%), then 20% [11, 33] train / 26% [16, 40] held-out at 100k. "Final" (90k + 100k) = 14.0% / 15.0%. Training episodes agree: 0–10% per 10k-step bin until 90k, then 22% (14/63) in 90k–100k. PPO with the same reward at 100k: 49% / 39% (3 seeds).
+- **DreamerV3 ratio 128 with the sparse reward** (3 seeds, `configs/ablation_sparse_dreamer_size1m_r128_100k.yaml`, `results/ablation_sparse/dreamerv3_r128/`; first run with harness-scored step checkpoints, `figures/ablation_sparse_dreamerv3_r128.png`):
+  - **3 seeds (2026-11-10):** "final" (90k + 100k, n=300) **17.7% [13.8, 22.4] train / 17.0% [13.2, 21.7] held-out**; at 100k alone 24.7% [18.5, 32.1] / 22.7% [16.7, 30.0] (n=150). Per seed at 90k → 100k (train / held-out): seed 0 8/4 → 20/26, seed 1 20/18 → 24/18, seed 2 4/12 → 30/24. All three are at 2–14% from 0 to 80k. PPO with the same reward at 100k: 49.3% / 39.3% (n=150). Reward-head unlock recall at the posterior on training replay: 0 (seed 0), 1 of 15 (seed 1), no reward events in the sampled batches (seed 2); 0 on the eval replay for all three. Training episodes with a table, 0–90k vs 90k–100k: seed 0 3% → 22%, seed 1 6% → 30%, seed 2 3% → 7% (seed 2's jump shows in the harness at 100k but barely in its training episodes).
+  - **Seed 0 detail — it learns the target, late.** Harness place_table (n=50 per split): 0–10% on every checkpoint from 0 to 90k (random 2% / 4.5%), then 20% [11, 33] train / 26% [16, 40] held-out at 100k. "Final" (90k + 100k) = 14.0% / 15.0%. Training episodes agree: 0–10% per 10k-step bin until 90k, then 22% (14/63) in 90k–100k. PPO with the same reward at 100k: 49% / 39% (3 seeds).
   - **The reward head still misses the table reward.** Unlock recall 0 at every horizon, posterior included (reward MAE on reward steps 0.998, i.e. it predicts ~0), on both replay buffers (`figures/ablation_sparse_wm_error_dreamerv3_r128.png`).
   - **Likely path of the signal (guess, from the code):** the critic is also trained on real replay rewards (`repval` loss, `third_party/dreamerv3/dreamerv3/agent.py:219-226`, weight 0.3 in `configs.yaml`), and imagined returns bootstrap from the critic. The repval loss climbs from 0.17 (50k) to 0.90 (end) as table rewards enter replay. To test: ablate `repval_loss`, or inspect critic values before table placements.
   - A near-duplicate final checkpoint (step 100,008, saved 8 steps after step 100,000: the driver runs 10 steps per call) was removed from the results before computing "final"; scored, it gave 28% / 20%, so including it would have raised "final" to ~24% / 23%. The launcher now skips such a save.
-  - Wall-clock 17,121 s (4.76 h), **not reportable**: a power outage put the laptop on battery for part of the run (20k → 30k took 37 min vs 28). Peak memory 10.8 GB.
+  - Wall-clock seed 0: 17,121 s (4.76 h), **not reportable**: a power outage put the laptop on battery for part of the run (20k → 30k took 37 min vs 28). Peak memory 10.8 GB.
+  - Wall-clock seeds 1 and 2 (only job, on AC throughout per `pmset -g log`): 16,751 s (4.65 h) and 16,685 s (4.63 h); peak memory 11.4 GB and 13.3 GB (`/usr/bin/time -l` max RSS).
 - **Sanity check against the literature: PPO at 1M steps** (1 seed, `configs/ppo_cnn_1m.yaml`, `results/budget1m/`; 18 min training).
   - Harness eval of the final checkpoints: place_table 94% train / 87% held-out, collect_wood 100%, make_wood_pickaxe 74–78%.
   - Paper-style metric (success over all 5,151 training episodes in the budget, as the Crafter paper reports it): collect_wood 86.4% / place_table 72.9% / make_wood_pickaxe 40.1%, vs the paper's PPO at 1M of 83.0 / 66.1 / 21.1%.
@@ -309,7 +311,7 @@ Our shared harness depends only on numpy, crafter, and gymnasium, so it runs in 
 | DQN (train_freq 4) | 100–300 sps | 3–8 min | 6–17 min | 14–42 min | 250k: 20–24 min (173–210 sps, mps, 1 env); **provisional** |
 | DreamerV3 size1m, ratio 32 | t_update 0.3–1.5 s | 0.2–0.8 h | 0.3–1.5 h | 0.8–3.5 h | 100k: **93 min** wall incl. 7 eval rounds (fps/train 420–630 replay steps/s ≈ t_update 1.6–2.4 s; peak RSS 9.9 GB); **provisional (shared CPU)** |
 | DreamerV3 size1m, ratio 64 | 2× updates | 0.4–1.5 h | 0.7–3 h | 1.6–7 h | 100k: 2.35 h wall (load avg ~10, other jobs at times); **provisional** |
-| DreamerV3 size1m, ratio 128 | 4× updates | – | – | – | 100k: **4.61 h** wall, only job (≈ 28 min / 10k steps; fps/train ≈ 770 replay steps/s; peak memory 10.5 GB) |
+| DreamerV3 size1m, ratio 128 | 4× updates | – | – | – | 100k: **4.61 h** wall, only job (≈ 28 min / 10k steps; fps/train ≈ 770 replay steps/s; peak memory 10.5 GB). Sparse-reward seeds 1 / 2, only job: 4.65 h / 4.63 h, peak 11.4 / 13.3 GB |
 
 **Totals (guess, including ~20% eval overhead):**
 - B=100k: ≈ 6–10 machine-hours for the main runs (4 methods × 3 seeds) + 3–5 h for the ablation.
@@ -425,7 +427,7 @@ ECE1508_RL_Project/
 | T18 | ★ TA update note (§10) | email text | T04 | 1 h | **yes** | todo | |
 | T19 | ★ README with exact reproduction commands (kept current) | `README.md` | ongoing | ongoing | **yes** | in progress (first version 2026-11-05) | Kevin |
 | T20 | Stage 4 main runs (4 methods × 3 seeds) | `results/main` | T08, T11–T14, gate | 1–2 weeks of nights | split by machine | todo | |
-| T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | in progress (PPO × 3 seeds done; DreamerV3 ratio 128 seed 0 done; seeds 1–2 todo) | Kevin |
+| T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | done for PPO and DreamerV3 ratio 128 (3 seeds each) | Kevin |
 | T22 | ★ Report skeleton + related work | report draft | – | ongoing | **yes** | todo | |
 | T23 | (Optional) CUDA path if a GPU appears | timing comparison | T11 | 2–4 h | yes | todo | |
 | T24 | ★ Multi-machine run sheet + results merge procedure | run sheet in this file | T07 | 1–2 h | **yes** | todo | |
@@ -464,6 +466,16 @@ Newest entry first. Template:
 - Next: ...
 ```
 
+### 2026-11-10 — DreamerV3 sparse reward, seeds 1–2 — MacBook Pro M2 Max
+- **Completed:** DreamerV3 ratio 128, sparse reward, seeds 1 and 2 (`configs/ablation_sparse_dreamer_size1m_r128_100k.yaml`), run back to back as the only job, on AC, with `caffeinate -i`; each followed by `dreamer_results`, `wm_eval` (64 batches) and `eval_dreamer` (11 step checkpoints, 0–100k). No near-duplicate end checkpoint this time (the fix works). Summary and figures refreshed (`results/ablation_sparse/summary.md`, `figures/ablation_sparse_dreamerv3_r128.png`, `figures/ablation_sparse_wm_error_dreamerv3_r128.png`); README updated.
+- **Measurements:**
+  - 3-seed "final" (90k + 100k): 17.7% [13.8, 22.4] / 17.0% [13.2, 21.7]; at 100k: 24.7% / 22.7% (PPO sparse at 100k: 49.3% / 39.3%).
+  - Learning: **yes, on all 3 seeds**, and late on all 3 (2–14% until 80k, 18–30% at 100k).
+  - Reward head: still near-blind to the table reward (1 of 15 caught on seed 1; 0 on seeds 0 and 2).
+  - Wall-clock 4.65 h / 4.63 h per 100k (≈ 28 min per 10k steps), consistent with the standard-reward r128 run (4.61 h). Peak memory 11.4 / 13.3 GB.
+- **Issues / open items:** peak memory reached 13.3 GB on seed 2 (was 10.5–10.8 GB), so the iMac (8 GB) stays ruled out. The `repval` explanation is still untested.
+- **Next:** one 200k-step sparse run (~9.5 h) to see where it levels off; standard-reward ratio-128 re-run with step checkpoints (~4.6 h).
+
 ### 2026-11-09 — DreamerV3 ratio 128; repo published — MacBook Pro M2 Max
 - **Completed:**
   - README for teammates (key terms, results, problems fixed, limitations, next steps) and CONTRIBUTING.md with the project rules.
@@ -489,6 +501,7 @@ Newest entry first. Template:
 - Fixed: the launcher saved a near-duplicate end checkpoint (step 100,008, 8 steps after 100,000); it now skips a final save within half an interval of the last one. The duplicate was moved to `ckpt_steps_excluded/` and the run re-scored without it (it scored 28% / 20%; with it "final" would read ~24% / 23%).
 - `plots/plot_ablation.py` labels in-loop curves (the standard-reward ratio-128 run has no step checkpoints).
 - **Next:** seeds 1–2 of the sparse run, a 200k-step sparse run, and a standard-reward ratio-128 re-run with step checkpoints (~4.6–9.5 h each, one per night).
+- **Evening:** started sparse-reward ratio-128 seeds 1 and 2 back to back (same config, only job, on AC; `caffeinate -i` so the Mac does not sleep). Seed 1 started training cleanly (step-0 checkpoint written). Results and timing to be added when both finish.
 
 ### 2026-11-05 (early morning) — overnight runs, continued — MacBook Pro M2 Max
 - **Completed after the entry below:**

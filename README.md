@@ -4,7 +4,7 @@ ECE1508 reinforcement learning course project. We compare four reinforcement-lea
 methods on **Crafter**, a 2D Minecraft-like game with sparse rewards and a partial view of
 the world, under the same budget of game steps and the same evaluation code.
 
-**Status (2026-11-09, evening):** preliminary results exist for all three research questions.
+**Status (2026-11-10):** preliminary results exist for all three research questions.
 Final experiments run Nov 16 – Dec 4; results freeze on Dec 6.
 Full plan, decisions and run log: [PLAN.md](PLAN.md).
 
@@ -50,7 +50,7 @@ Full plan, decisions and run log: [PLAN.md](PLAN.md).
 3. **Experiments (preliminary).**
    - PPO, PPO-LSTM, DQN and DQN 3-step: 250k steps × 3 seeds each.
    - DreamerV3: 100k steps × 3 seeds, plus one run each with 2× and 4× training updates.
-   - A reward-sparsity ablation for PPO (3 seeds) and for DreamerV3 with 4× updates (1 seed).
+   - A reward-sparsity ablation for PPO and for DreamerV3 with 4× updates (3 seeds each).
    - PPO at 1M steps, to compare with the Crafter paper.
    - World-model error vs. imagination horizon for every DreamerV3 run.
 
@@ -68,19 +68,20 @@ Success = placing a table. Final = last two checkpoints of each of 3 seeds, pool
 | DreamerV3 (smallest) | 100k | 4.7% [2–9] | 2.7% [1–7] | – |
 | DreamerV3, 4× updates (1 seed) | 100k | 0% [0–7] | 0% [0–7] | – |
 | PPO, sparse reward (ablation) | 250k | 96.0% [93–98] | 82.3% [78–86] | +14 pts |
-| DreamerV3, 4× updates, sparse reward (1 seed) | 100k | 14.0% [9–22] | 15.0% [9–23] | ≈0 |
+| DreamerV3, 4× updates, sparse reward | 100k | 17.7% [14–22] | 17.0% [13–22] | ≈0 |
 
-DreamerV3 rows with 1 seed pool 100 episodes per world set (3 seeds: 150, from the final
-checkpoints only).
+Rows pool the last two checkpoints over all seeds (3 seeds: 300 episodes per world set), except
+the older DreamerV3 runs, which have only their final checkpoint scored (3 seeds: 150; the
+1-seed 4× row: 100).
 
 - **RQ1:** PPO learns fastest. Memory (PPO-LSTM) does not help at this budget. Plain DQN is
   unreliable across seeds; 3-step returns fix that. DreamerV3 at this size stays at random level
   with the default number of updates. With 4× updates it does learn (it collects saplings 97% of
   the time vs. 51% for random play, wood 41% vs. 21%) but goes for these easy achievements and
   never places a table. When it is rewarded only for the table (sparse reward), it does learn
-  the task, but late: it stays at random level until ~90k steps, then reaches 20% / 26%
-  (training / unseen worlds) at 100k ([figure](figures/ablation_sparse_dreamerv3_r128.png)).
-  PPO with the same sparse reward is at 49% / 39% at 100k (3 seeds).
+  the task, but late: all 3 seeds stay near random level until 80–90k steps, then reach
+  25% / 23% (training / unseen worlds) at 100k ([figure](figures/ablation_sparse_dreamerv3_r128.png)).
+  PPO with the same sparse reward is at 49% / 39% at 100k (3 seeds each).
 - **RQ2:** agents that learn do 5–10 points worse on unseen worlds. Both curves match until
   ~100k steps; after that, training-world success rises faster. Unseen-world success still
   rises with more training (PPO at 1M: 94% training, 87% unseen).
@@ -89,8 +90,8 @@ checkpoints only).
   Its policy learns only from those predictions, so it gets no signal for the task. With 4×
   updates the world model catches 30% of unlocks while watching and 10–60% while imagining up
   to 16 steps ahead ([figure](figures/main_wm_error_dreamerv3_r128.png)), and that is when its
-  policy starts to learn. With the sparse reward the reward predictor again misses every table
-  reward, yet the policy still learns the table. Our explanation (not yet tested): DreamerV3's
+  policy starts to learn. With the sparse reward the reward predictor again misses the table
+  reward (1 of ~15 caught on seed 1, none on seeds 0 and 2), yet the policy still learns the table. Our explanation (not yet tested): DreamerV3's
   value network is also trained on the real rewards stored in replay (the `repval` loss in
   `dreamerv3/agent.py`), so the reward reaches the policy through the value network instead.
 - **Against published work:** scored the way the Crafter paper scores it (success over all
@@ -133,17 +134,18 @@ More figures: [generalization](figures/main_generalization.png),
   run below tests it.
 - **DreamerV3 compute grows with the update ratio.** Training time grows roughly in proportion
   to the ratio: 100k steps take ~1.5 h at ratio 32, 2.35 h at ratio 64 and 4.6 h at ratio 128
-  (~6 game steps/s). Three seeds at ratio 128 are ~14 h, and each further DreamerV3 experiment
+  (~6 game steps/s; the two sparse-reward seeds run alone took 4.65 h and 4.63 h). Three seeds at ratio 128 are ~14 h, and each further DreamerV3 experiment
   (sparse reward, more seeds) costs the same again. The authors' ratio 512 would be roughly
   18 h per run at this size (an extrapolation, not measured).
-- **Only one machine can run DreamerV3.** Its runs peak at 10–11 GB of memory (9.9 GB at
-  ratio 32, 10.5 GB at ratio 128), more than the iMac's 8 GB, so all DreamerV3 runs share the
+- **Only one machine can run DreamerV3.** Its runs peak at 10–13 GB of memory (9.9 GB at
+  ratio 32, 10.5–13.3 GB at ratio 128), more than the iMac's 8 GB, so all DreamerV3 runs share the
   M2 Max with the Stage 4 runs of the other methods, one job at a time.
-- **Few DreamerV3 seeds.** Ratio 64 and ratio 128 have one seed each, so their differences from
-  ratio 32 are not yet confirmed across seeds.
-- **DreamerV3 learns the table too late in 100k steps.** With the sparse reward it reaches 20%
-  only at the last checkpoint, so "final" (the last two checkpoints, 90k and 100k) is 14% / 15%,
-  and we don't know where it would level off. A longer run would tell (our guess: higher).
+- **Few DreamerV3 seeds.** Ratio 64 and the standard-reward ratio-128 run have one seed each, so
+  their differences from ratio 32 are not yet confirmed across seeds.
+- **DreamerV3 learns the table too late in 100k steps.** With the sparse reward all 3 seeds
+  reach 18–30% only at the last checkpoint, so "final" (the last two checkpoints, 90k and 100k)
+  is 18% / 17%, and we don't know where it would level off. A longer run would tell (our guess:
+  higher).
 - **DreamerV3's reward predictor misses the rewards that matter.** Even when the policy learns
   the table, the world model never predicts the table reward (sparse run). RQ3 has to report
   this, and the value-network explanation above still needs checking.
@@ -153,15 +155,15 @@ More figures: [generalization](figures/main_generalization.png),
   and is too noisy to say when learning starts. Re-running them with step checkpoints fixes this.
 - **RQ3 data:** measured on the agent's replay memory, not on a separate set of unseen-world games.
 - **Timing numbers are mostly not reportable yet:** several jobs shared the laptop during the
-  overnight runs. The DreamerV3 ratio-128 run is the exception (it ran alone). The sparse-reward
-  run is not: a power outage put the laptop on battery for part of it, and one 10k-step stretch
-  took 37 min instead of 28.
+  overnight runs. The DreamerV3 ratio-128 runs are the exception (each ran alone), except
+  sparse-reward seed 0: a power outage put the laptop on battery for part of it, and one 10k-step
+  stretch took 37 min instead of 28.
 - **Small study:** default (rl-zoo) settings, no tuning, 3 seeds, 250k steps.
 
 ## Next steps
 1. **DreamerV3:**
-   - The sparse-reward run learned the table only at the very end. Next: seeds 1 and 2 of it
-     (~9.5 h), and one longer run (200k steps, ~9.5 h) to see where it levels off.
+   - The sparse-reward runs (3 seeds) learn the table only at the very end. Next: one longer
+     run (200k steps, ~9.5 h) to see where it levels off.
    - Re-run the standard-reward ratio-128 run with step checkpoints, so both reward settings
      have harness learning curves.
    - Time the next model size (12M parameters) before committing to it.
