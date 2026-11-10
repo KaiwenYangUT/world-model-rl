@@ -58,21 +58,21 @@ Full plan, decisions and run log: [PLAN.md](PLAN.md).
 Success = placing a table. Final = last two checkpoints of each of 3 seeds, pooled
 (300 episodes per world set). Brackets = 95% confidence interval.
 
-| Method | Steps | Training worlds | Unseen worlds | Gap |
-|---|---|---|---|---|
-| Random policy | – | 2.0% | 4.5% | – |
-| **PPO** | 250k | **62.0%** [56–67] | **52.0%** [46–58] | +10 pts |
-| PPO-LSTM | 250k | 45.0% [40–51] | 40.3% [35–46] | +5 pts |
-| DQN | 250k | 16.3% [13–21] (learns on 1 of 3 seeds) | 17.7% [14–22] | ≈0 |
-| DQN, 3-step returns | 250k | 47.0% [41–53] | 37.0% [32–43] | +10 pts |
-| DreamerV3 (smallest) | 100k | 4.7% [2–9] | 2.7% [1–7] | – |
-| DreamerV3, 4× updates (1 seed) | 100k | 0% [0–7] | 0% [0–7] | – |
-| PPO, sparse reward (ablation) | 250k | 96.0% [93–98] | 82.3% [78–86] | +14 pts |
-| DreamerV3, 4× updates, sparse reward | 100k | 17.7% [14–22] | 17.0% [13–22] | ≈0 |
+| Method | Seeds | Steps | Training worlds | Unseen worlds | Gap |
+|---|---|---|---|---|---|
+| Random policy | – | – | 2.0% | 4.5% | – |
+| **PPO** | 3 | 250k | **62.0%** [56–67] | **52.0%** [46–58] | +10 pts |
+| PPO-LSTM | 3 | 250k | 45.0% [40–51] | 40.3% [35–46] | +5 pts |
+| DQN | 3 | 250k | 16.3% [13–21] (learns on 1 of 3 seeds) | 17.7% [14–22] | ≈0 |
+| DQN, 3-step returns | 3 | 250k | 47.0% [41–53] | 37.0% [32–43] | +10 pts |
+| DreamerV3 (smallest) | 3 | 100k | 4.7% [2–9] | 2.7% [1–7] | – |
+| DreamerV3, 4× updates | 1 | 100k | 0% [0–7] | 0% [0–7] | – |
+| PPO, sparse reward (ablation) | 3 | 250k | 96.0% [93–98] | 82.3% [78–86] | +14 pts |
+| DreamerV3, 4× updates, sparse reward (ablation) | 3 | 100k | 17.7% [14–22] | 17.0% [13–22] | ≈0 |
 
 Rows pool the last two checkpoints over all seeds (3 seeds: 300 episodes per world set), except
-the older DreamerV3 runs, which have only their final checkpoint scored (3 seeds: 150; the
-1-seed 4× row: 100).
+the two older DreamerV3 runs, which have only their final checkpoint scored ("smallest": 150
+episodes per world set over 3 seeds; standard-reward 4× updates: 50, one seed).
 
 - **RQ1:** PPO learns fastest. Memory (PPO-LSTM) does not help at this budget. Plain DQN is
   unreliable across seeds; 3-step returns fix that. DreamerV3 at this size stays at random level
@@ -91,7 +91,8 @@ the older DreamerV3 runs, which have only their final checkpoint scored (3 seeds
   updates the world model catches 30% of unlocks while watching and 10–60% while imagining up
   to 16 steps ahead ([figure](figures/main_wm_error_dreamerv3_r128.png)), and that is when its
   policy starts to learn. With the sparse reward the reward predictor again misses the table
-  reward (1 of ~15 caught on seed 1, none on seeds 0 and 2), yet the policy still learns the table. Our explanation (not yet tested): DreamerV3's
+  reward (1 of 15 caught on seed 1, none on seeds 0 and 2), yet the policy still learns the
+  table. Our explanation (not yet tested): DreamerV3's
   value network is also trained on the real rewards stored in replay (the `repval` loss in
   `dreamerv3/agent.py`), so the reward reaches the policy through the value network instead.
 - **Against published work:** scored the way the Crafter paper scores it (success over all
@@ -134,8 +135,8 @@ More figures: [generalization](figures/main_generalization.png),
   run below tests it.
 - **DreamerV3 compute grows with the update ratio.** Training time grows roughly in proportion
   to the ratio: 100k steps take ~1.5 h at ratio 32, 2.35 h at ratio 64 and 4.6 h at ratio 128
-  (~6 game steps/s; the two sparse-reward seeds run alone took 4.65 h and 4.63 h). Three seeds at ratio 128 are ~14 h, and each further DreamerV3 experiment
-  (sparse reward, more seeds) costs the same again. The authors' ratio 512 would be roughly
+  (~6 game steps/s; sparse-reward seeds 1 and 2, each run alone, took 4.65 h and 4.63 h).
+  Three seeds at ratio 128 are ~14 h, and each further DreamerV3 experiment costs the same again. The authors' ratio 512 would be roughly
   18 h per run at this size (an extrapolation, not measured).
 - **Only one machine can run DreamerV3.** Its runs peak at 10–13 GB of memory (9.9 GB at
   ratio 32, 10.5–13.3 GB at ratio 128), more than the iMac's 8 GB, so all DreamerV3 runs share the
