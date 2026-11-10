@@ -1,0 +1,42 @@
+# Timing only (task: re-time on an idle M2 Max, CONTRIBUTING.md rule 5). Same settings as
+# configs/dqn_nstep3_250k.yaml, but 50k steps, exp 'timing', checkpoints every 10k for per-10k wall-clock.
+# Run with --no-eval: success numbers come from the full runs, not from this one.
+#   .venv-sb3/bin/python scripts/train_sb3.py --config configs/timing_dqn_nstep3_50k.yaml --seed 0 --no-eval
+exp: timing
+method: dqn_nstep3
+algo: DQN
+policy: CnnPolicy
+total_steps: 50000
+n_envs: 1
+vec_env: dummy
+device: mps               # chosen by the T14 timing check (see PLAN.md progress log)
+warm_cache: true
+
+env:
+  target: place_table
+  reward_mode: crafter
+  length: 10000
+
+algo_kwargs:
+  buffer_size: 100000
+  learning_rate: 1.0e-4
+  batch_size: 32
+  learning_starts: 10000
+  target_update_interval: 1000
+  train_freq: 4
+  gradient_steps: 1
+  exploration_fraction: 0.2
+  exploration_final_eps: 0.05
+  n_steps: 3
+  optimize_memory_usage: false  # NStepReplayBuffer does not support it (SB3 2.9); ~2.4 GB
+
+eval:
+  every: 10000
+  n_episodes: 50
+  n_envs: 8
+  rng_seed: 1234
+  policy: epsilon         # greedy with epsilon = 0.05 (PLAN.md §3)
+  epsilon: 0.05
+  device: cpu
+  workers: 8
+  splits: [train, heldout]

@@ -1,0 +1,11 @@
+# RQ3 follow-up: does DreamerV3's critic anticipate the table reward that its reward head misses?
+# scripts/value_check.py plays saved step checkpoints of the sparse-reward ratio-128 runs and
+# records the critic's value at every step. No training. See README (RQ3) and PLAN.md.
+run_config: configs/ablation_sparse_dreamer_size1m_r128_100k.yaml
+seeds: [0, 1, 2]
+checkpoints: [50000, 90000, 100000]   # before learning, as it starts, last
+split: train
+n_episodes: 50
+n_envs: 8
+rng_seed: 1234          # same worlds and order as the harness eval
+max_k: 40               # value curve over the last 40 steps before a table is placed

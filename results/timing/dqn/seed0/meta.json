@@ -1,0 +1,102 @@
+{
+  "started": "2026-11-10T14:38:35-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-sb3/bin/python",
+    "scripts/train_sb3.py",
+    "--config",
+    "configs/timing_dqn_50k.yaml",
+    "--seed",
+    "0",
+    "--no-eval"
+  ],
+  "config_path": "configs/timing_dqn_50k.yaml",
+  "config": {
+    "exp": "timing",
+    "method": "dqn",
+    "algo": "DQN",
+    "policy": "CnnPolicy",
+    "total_steps": 50000,
+    "n_envs": 1,
+    "vec_env": "dummy",
+    "device": "mps",
+    "warm_cache": true,
+    "env": {
+      "target": "place_table",
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "algo_kwargs": {
+      "buffer_size": 100000,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "learning_starts": 10000,
+      "target_update_interval": 1000,
+      "train_freq": 4,
+      "gradient_steps": 1,
+      "exploration_fraction": 0.1,
+      "exploration_final_eps": 0.01,
+      "optimize_memory_usage": true,
+      "replay_buffer_kwargs": {
+        "handle_timeout_termination": false
+      }
+    },
+    "eval": {
+      "every": 10000,
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "policy": "epsilon",
+      "epsilon": 0.05,
+      "device": "cpu",
+      "workers": 8,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    }
+  },
+  "git": {
+    "commit": "884d2c69f167b50e4bc93799e56a6c0b9bbc0d39",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "mps",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "2.4.6",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "torch": "2.15.0",
+    "stable_baselines3": "2.9.2",
+    "sb3_contrib": "2.9.2"
+  },
+  "load_avg_start": [
+    3.90185546875,
+    4.10302734375,
+    3.23193359375
+  ],
+  "seed": 0,
+  "finished": "2026-11-10T14:40:59-05:00",
+  "wall_clock_s": 143.95,
+  "load_avg_end": [
+    1.64794921875,
+    3.07177734375,
+    2.9453125
+  ],
+  "env_steps": 50000,
+  "train_wall_clock_s": 118.88,
+  "warmup_s": 24.35,
+  "wall_clock_per_10k_steps_s": 23.78,
+  "train_sps": 420.6,
+  "torch_version": "2.15.0",
+  "n_train_episodes": 284
+}

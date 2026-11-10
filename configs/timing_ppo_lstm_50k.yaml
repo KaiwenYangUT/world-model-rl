@@ -1,0 +1,40 @@
+# Timing only (task: re-time on an idle M2 Max, CONTRIBUTING.md rule 5). Same settings as
+# configs/ppo_lstm_250k.yaml, but 50k steps, exp 'timing', checkpoints every 10k for per-10k wall-clock.
+# Run with --no-eval: success numbers come from the full runs, not from this one.
+#   .venv-sb3/bin/python scripts/train_sb3.py --config configs/timing_ppo_lstm_50k.yaml --seed 0 --no-eval
+exp: timing
+method: ppo_lstm
+algo: RecurrentPPO
+policy: CnnLstmPolicy
+total_steps: 50000
+n_envs: 8
+vec_env: subproc
+device: mps               # chosen by the T13 timing check (see PLAN.md progress log)
+warm_cache: true
+
+env:
+  target: place_table
+  reward_mode: crafter
+  length: 10000
+
+algo_kwargs:
+  n_steps: 128
+  n_epochs: 4
+  batch_size: 256
+  learning_rate: 2.5e-4
+  clip_range: 0.1
+  vf_coef: 0.5
+  ent_coef: 0.01
+  policy_kwargs:
+    enable_critic_lstm: false
+    lstm_hidden_size: 128
+
+eval:
+  every: 10000
+  n_episodes: 50
+  n_envs: 8
+  rng_seed: 1234
+  policy: sample
+  device: cpu
+  workers: 8
+  splits: [train, heldout]

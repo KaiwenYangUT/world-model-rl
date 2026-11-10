@@ -92,9 +92,15 @@ episodes per world set over 3 seeds; standard-reward 4× updates: 50, one seed).
   to 16 steps ahead ([figure](figures/main_wm_error_dreamerv3_r128.png)), and that is when its
   policy starts to learn. With the sparse reward the reward predictor again misses the table
   reward (1 of 15 caught on seed 1, none on seeds 0 and 2), yet the policy still learns the
-  table. Our explanation (not yet tested): DreamerV3's
-  value network is also trained on the real rewards stored in replay (the `repval` loss in
-  `dreamerv3/agent.py`), so the reward reaches the policy through the value network instead.
+  table. Our explanation: DreamerV3's value network is also trained on the real rewards stored
+  in replay (the `repval` loss in `dreamerv3/agent.py`), so the reward reaches the policy through
+  the value network instead. A check on the saved checkpoints supports this but does not prove
+  it ([figure](figures/ablation_sparse_value_check_dreamerv3_r128.png)): at 100k steps, on all
+  3 seeds, the value network scores states higher in games that go on to place a table
+  (+17% to +56% vs games that don't) and when the agent holds wood (+17% to +98% vs no wood);
+  at 50k and 90k neither shows. It does not rise in the last 40 steps before a table, but with
+  DreamerV3's discount (0.997 per step) even a perfect value network would rise only ~11% there.
+  The values are small (0.02–0.1). A firm test is one run with the `repval` loss turned off.
 - **Against published work:** scored the way the Crafter paper scores it (success over all
   training episodes), our PPO at 1M steps gets 86% / 73% / 40% on collect wood / place table /
   make wood pickaxe vs. the paper's 83% / 66% / 21%. Our random baseline also matches the paper's.
@@ -136,8 +142,13 @@ More figures: [generalization](figures/main_generalization.png),
 - **DreamerV3 compute grows with the update ratio.** Training time grows roughly in proportion
   to the ratio: 100k steps take ~1.5 h at ratio 32, 2.35 h at ratio 64 and 4.6 h at ratio 128
   (~6 game steps/s; sparse-reward seeds 1 and 2, each run alone, took 4.65 h and 4.63 h).
-  Three seeds at ratio 128 are ~14 h, and each further DreamerV3 experiment costs the same again. The authors' ratio 512 would be roughly
-  18 h per run at this size (an extrapolation, not measured).
+  Three seeds at ratio 128 are ~14 h, and each further DreamerV3 experiment costs the same
+  again. The authors' ratio 512 would be roughly 18 h per run at this size (an extrapolation,
+  not measured).
+- **A bigger DreamerV3 is out of reach on this laptop.** The next size up (size12m, 10.5M
+  parameters vs 0.69M) trains ~3.9× slower at ratio 128 (1.5 vs 6 game steps/s, measured in a
+  short run on the idle laptop), so 100k steps would take ~18 h per seed (projected). It only
+  makes sense on a GPU.
 - **Only one machine can run DreamerV3.** Its runs peak at 10–13 GB of memory (9.9 GB at
   ratio 32, 10.5–13.3 GB at ratio 128), more than the iMac's 8 GB, so all DreamerV3 runs share the
   M2 Max with the Stage 4 runs of the other methods, one job at a time.
@@ -149,16 +160,19 @@ More figures: [generalization](figures/main_generalization.png),
   higher).
 - **DreamerV3's reward predictor misses the rewards that matter.** Even when the policy learns
   the table, the world model never predicts the table reward (sparse run). RQ3 has to report
-  this, and the value-network explanation above still needs checking.
+  this; the value-network explanation above is supported by a check but not yet proven.
 - **DreamerV3 evaluation gaps (older runs).** The runs before the sparse-reward run have only
   their latest checkpoint scored by the harness (70k–97k of 100k steps), and their learning
   curves come from the in-loop evaluation, which plays only ~10 episodes per world set per round
   and is too noisy to say when learning starts. Re-running them with step checkpoints fixes this.
 - **RQ3 data:** measured on the agent's replay memory, not on a separate set of unseen-world games.
-- **Timing numbers are mostly not reportable yet:** several jobs shared the laptop during the
-  overnight runs. The DreamerV3 ratio-128 runs are the exception (each ran alone), except
-  sparse-reward seed 0: a power outage put the laptop on battery for part of it, and one 10k-step
-  stretch took 37 min instead of 28.
+- **Timing:** all numbers are from one laptop (MacBook Pro M2 Max, 32 GB); a faster machine,
+  especially one with an NVIDIA GPU, should be faster. The model-free methods were re-timed alone
+  on the idle laptop (50k steps each, training only; [table](results/timing/summary.md)): per
+  10k steps PPO 6.2 s, PPO-LSTM 16 s, DQN and DQN 3-step 28 s (on the Mac GPU). The older
+  overnight timings were 1.4–2× slower because several jobs shared the laptop. The DreamerV3
+  ratio-128 runs ran alone, except sparse-reward seed 0 (partly on battery after a power
+  outage).
 - **Small study:** default (rl-zoo) settings, no tuning, 3 seeds, 250k steps.
 
 ## Next steps
@@ -167,13 +181,15 @@ More figures: [generalization](figures/main_generalization.png),
      run (200k steps, ~9.5 h) to see where it levels off.
    - Re-run the standard-reward ratio-128 run with step checkpoints, so both reward settings
      have harness learning curves.
-   - Time the next model size (12M parameters) before committing to it.
-   - Look for an NVIDIA GPU (university cluster or cloud), which DreamerV3 is built for.
+   - Confirm how the table reward reaches the policy: one sparse-reward run with the `repval`
+     loss turned off (~4.6 h).
+   - Look for an NVIDIA GPU (university cluster or cloud), which DreamerV3 is built for. The
+     next model size (size12m) needs ~18 h per 100k steps on this laptop.
 2. **Measurement:**
    - Collect separate unseen-world games for RQ3.
-   - Re-time all methods on an idle machine.
 3. **Final experiments (Nov 16 – Dec 4):**
-   - PPO, PPO-LSTM and DQN at 1M steps × 3 seeds.
+   - PPO, PPO-LSTM and DQN at 1M steps × 3 seeds: ~0.2 h / 0.45 h / 0.8 h of training per
+     seed on this laptop (projected from the timing runs; evaluation adds to this).
    - Decide whether DQN 3-step becomes our main DQN.
 4. **Communication:** send the TA update, then build the presentation figures from frozen results.
 

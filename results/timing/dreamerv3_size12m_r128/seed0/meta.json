@@ -1,0 +1,113 @@
+{
+  "started": "2026-11-10T14:43:23-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-dreamer/bin/python",
+    "scripts/train_dreamer.py",
+    "--config",
+    "configs/timing_dreamer_size12m_r128.yaml",
+    "--seed",
+    "0"
+  ],
+  "config_path": "configs/timing_dreamer_size12m_r128.yaml",
+  "config": {
+    "exp": "timing",
+    "method": "dreamerv3_size12m_r128",
+    "env": {
+      "target": "place_table",
+      "reward_mode": "sparse",
+      "length": 10000
+    },
+    "dreamer_flags": {
+      "configs": [
+        "crafter",
+        "size12m"
+      ],
+      "run.steps": 2000,
+      "run.train_ratio": 128,
+      "run.envs": 4,
+      "run.eval_envs": 2,
+      "run.eval_eps": 2,
+      "run.report_every": 100000,
+      "run.save_every": 100000,
+      "run.log_every": 60,
+      "replay.size": 100000,
+      "jax.platform": "cpu",
+      "jax.compute_dtype": "float32",
+      "logger.outputs": [
+        "jsonl"
+      ]
+    }
+  },
+  "git": {
+    "commit": "884d2c69f167b50e4bc93799e56a6c0b9bbc0d39",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "cpu (jax)",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "1.26.4",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "jax": "0.4.33",
+    "jaxlib": "0.4.33"
+  },
+  "load_avg_start": [
+    1.59130859375,
+    2.54638671875,
+    2.75
+  ],
+  "seed": 0,
+  "finished": "2026-11-10T14:51:41-05:00",
+  "wall_clock_s": 497.84,
+  "load_avg_end": [
+    14.22216796875,
+    10.65869140625,
+    6.89111328125
+  ],
+  "argv": [
+    "--configs",
+    "crafter",
+    "size12m",
+    "--run.steps",
+    "2000",
+    "--run.train_ratio",
+    "128",
+    "--run.envs",
+    "4",
+    "--run.eval_envs",
+    "2",
+    "--run.eval_eps",
+    "2",
+    "--run.report_every",
+    "100000",
+    "--run.save_every",
+    "100000",
+    "--run.log_every",
+    "60",
+    "--replay.size",
+    "100000",
+    "--jax.platform",
+    "cpu",
+    "--jax.compute_dtype",
+    "float32",
+    "--logger.outputs",
+    "jsonl",
+    "--logdir",
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/runs/timing/dreamerv3_size12m_r128/seed0/logdir",
+    "--seed",
+    "0",
+    "--script",
+    "train_eval"
+  ],
+  "jax_version": "0.4.33"
+}

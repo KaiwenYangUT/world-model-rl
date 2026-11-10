@@ -12,9 +12,11 @@
   2. DreamerV3: with the sparse reward at ratio 128 it learns `place_table`, but only from ~80–90k steps (3 seeds: 17.7% / 17.0% final, 24.7% / 22.7% at 100k). Next: one 200k-step run (~9.5 h) to see where it levels off; re-run standard-reward ratio 128 with step checkpoints for a harness curve.
   3. T15 + T16 proper: held-out trajectories for RQ3.
   4. ~~Step-indexed DreamerV3 checkpoints~~ done 2026-11-09 (`ckpt_every_steps` in the config; first used by the sparse ablation run).
-  5. Re-time PPO/DQN/PPO-LSTM on an idle machine.
-- **Nothing is running.** DreamerV3 sparse-reward ratio-128 seeds 1 and 2 finished at 06:28 on 2026-11-10.
-- **Blockers:** none. **All timings tonight are provisional** (several jobs shared the machine; load avg up to ~100), per CONTRIBUTING.md rule 5.
+  5. ~~Re-time PPO/DQN/PPO-LSTM on an idle machine~~ done 2026-11-10 (T26); ~~time DreamerV3 size12m~~ done (T27: ~18 h per 100k on CPU, GPU only); ~~critic value check~~ done (T28).
+  6. Confirm the repval path: one sparse-reward ratio-128 run with `repval_loss: False` (~4.6 h).
+  7. Teammates: try their compute (ideally an NVIDIA GPU) for DreamerV3.
+- **Nothing is running.** Timing runs and the value check finished at 14:52 on 2026-11-10.
+- **Blockers:** none. Timings from before 2026-11-10 are provisional (several jobs shared the machine); the 2026-11-10 timing runs (T26, T27) and the sparse seeds 1–2 ran alone.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
   - Results frozen: **Sun 2026-12-06**.
@@ -306,12 +308,13 @@ Our shared harness depends only on numpy, crafter, and gymnasium, so it runs in 
 
 | Method | Guessed throughput | 50k | 100k | 250k | Measured |
 |---|---|---|---|---|---|
-| PPO-CNN (SB3, CPU) | 150–600 sps | 2–6 min | 3–11 min | 7–28 min | T05 benchmark (random-ish early policy, no eval): **MPS + 8 subproc 1,660 sps** → 100k ≈ 1 min, 250k ≈ 2.5 min; CPU + 8 subproc 347 sps. Full runs (Stage 1): 250k in 162 s (1,553 sps, load ≈ 2) to 268 s (938 sps, load ≈ 20), + ~25 s cache warm-up and ~2.5 min eval (26 ckpts × 100 episodes, 8 workers) |
-| PPO-LSTM | 0.3–0.5× PPO | 5–20 min | 10–40 min | 25–90 min | 250k: 9–10 min training (404–454 sps, mps + 8 subproc), +~3 min eval; **provisional (load avg 10–20)** |
-| DQN (train_freq 4) | 100–300 sps | 3–8 min | 6–17 min | 14–42 min | 250k: 20–24 min (173–210 sps, mps, 1 env); **provisional** |
+| PPO-CNN (SB3, CPU) | 150–600 sps | 2–6 min | 3–11 min | 7–28 min | T05 benchmark (random-ish early policy, no eval): **MPS + 8 subproc 1,660 sps** → 100k ≈ 1 min, 250k ≈ 2.5 min; CPU + 8 subproc 347 sps. Full runs (Stage 1): 250k in 162 s (1,553 sps, load ≈ 2) to 268 s (938 sps, load ≈ 20), + ~25 s cache warm-up and ~2.5 min eval (26 ckpts × 100 episodes, 8 workers); **idle re-time 2026-11-10 (only job, AC): 6.2 s / 10k steps training (1,609 sps, mps + 8 subproc) → 250k ≈ 2.6 min, 1M ≈ 10 min** (`results/timing/summary.md`) |
+| PPO-LSTM | 0.3–0.5× PPO | 5–20 min | 10–40 min | 25–90 min | 250k: 9–10 min training (404–454 sps, mps + 8 subproc), +~3 min eval; **provisional (load avg 10–20)**; **idle re-time 2026-11-10: 16.2 s / 10k (616 sps, mps) → 1M ≈ 27 min** |
+| DQN (train_freq 4) | 100–300 sps | 3–8 min | 6–17 min | 14–42 min | 250k: 20–24 min (173–210 sps, mps, 1 env); **provisional**; **idle re-time 2026-11-10: 27.9 s / 10k after learning_starts (358 sps, mps, 1 env); DQN 3-step the same → 1M ≈ 47 min** |
 | DreamerV3 size1m, ratio 32 | t_update 0.3–1.5 s | 0.2–0.8 h | 0.3–1.5 h | 0.8–3.5 h | 100k: **93 min** wall incl. 7 eval rounds (fps/train 420–630 replay steps/s ≈ t_update 1.6–2.4 s; peak RSS 9.9 GB); **provisional (shared CPU)** |
 | DreamerV3 size1m, ratio 64 | 2× updates | 0.4–1.5 h | 0.7–3 h | 1.6–7 h | 100k: 2.35 h wall (load avg ~10, other jobs at times); **provisional** |
 | DreamerV3 size1m, ratio 128 | 4× updates | – | – | – | 100k: **4.61 h** wall, only job (≈ 28 min / 10k steps; fps/train ≈ 770 replay steps/s; peak memory 10.5 GB). Sparse-reward seeds 1 / 2, only job: 4.65 h / 4.63 h, peak 11.4 / 13.3 GB |
+| DreamerV3 **size12m** (10.5M params), ratio 128 | – | – | – | – | Timing run 2026-11-10 (2k steps, only job, AC; `configs/timing_dreamer_size12m_r128.yaml`): fps/train ≈ 196 replay steps/s vs 764 for size1m, fps/policy ≈ 1.53 env steps/s vs 6.0 → **~3.9× slower; 100k ≈ 18 h projected**. Peak RSS 6.5 GB in the short run (replay holds only 2k steps; a full run will need more — guess) |
 
 **Totals (guess, including ~20% eval overhead):**
 - B=100k: ≈ 6–10 machine-hours for the main runs (4 methods × 3 seeds) + 3–5 h for the ablation.
@@ -432,6 +435,9 @@ ECE1508_RL_Project/
 | T23 | (Optional) CUDA path if a GPU appears | timing comparison | T11 | 2–4 h | yes | todo | |
 | T24 | ★ Multi-machine run sheet + results merge procedure | run sheet in this file | T07 | 1–2 h | **yes** | todo | |
 | T25 | Presentation figures and slides (from frozen results) | slides | T20, T21, T16 | 1–2 days | partly | todo | |
+| T26 | Re-time PPO / PPO-LSTM / DQN / DQN 3-step on the idle M2 Max | `results/timing/summary.md` | – | 15 min | – | done (2026-11-10) | Kevin |
+| T27 | DreamerV3 size12m CPU timing | §5 row | – | 10 min | – | done (2026-11-10; ~18 h per 100k projected → GPU only) | Kevin |
+| T28 | RQ3: critic value before table placements (`scripts/value_check.py`) | `value_check.csv`, figure | T21 | 2 h | – | done (2026-11-10; supports the repval path; firm test = repval-off run, todo) | Kevin |
 
 **Suggested split:**
 - **Critical path:** T00–T08 and T10–T11 on the M2 Max.
@@ -465,6 +471,20 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-10 (afternoon) — value check and timing runs — MacBook Pro M2 Max
+- **Completed:**
+  - **T28** `scripts/value_check.py` + `configs/analysis_value_check_sparse_r128.yaml` + `plots/plot_value_check.py`: plays the sparse-reward ratio-128 step checkpoints (50k, 90k, 100k × 3 seeds, 50 train-world episodes each, harness world seeds) and records the critic's value per step. Agent.policy is replaced in our script (not in third_party) by a copy that also returns `val(...).pred()` de-normalised by `valnorm`. Check: on 8 episodes the actions are identical to the harness eval (same lengths, same 3 tables at the same steps). 2.5 min of compute.
+  - **T26** timing configs `configs/timing_{ppo_cnn,ppo_lstm,dqn,dqn_nstep3}_50k.yaml` (same settings as the 250k configs, 50k steps, `--no-eval`) and `plots/summarize_timing.py` → `results/timing/summary.{csv,md}`.
+  - **T27** `configs/timing_dreamer_size12m_r128.yaml` (2k steps).
+  - Chained back to back as the only jobs, on AC (`runs/logs/timing_load.log`: load 1.5–5 during SB3, 9–14 during DreamerV3, its own threads).
+- **Measurements:**
+  - Value check (per-seed value relative to the same seed's baseline): at 100k, value in episodes that place a table vs episodes that don't: ×1.40 / ×1.17 / ×1.56 (seeds 0/1/2); with 1–3 wood vs 0 wood: ×1.17–1.98 on all seeds. At 50k and 90k: ×0.85–1.04 (no difference). No rise over the last 40 steps before placement (a perfect critic with disc 0.997 would rise only ~11% there). Absolute values small: 0.0005–0.12. **Supports** the repval explanation (the reward head predicts ~0 for tables, so the critic's table value has to come from real replay rewards); not proof.
+  - Timing per 10k steps (training only): PPO 6.2 s, PPO-LSTM 16.2 s, DQN 27.9 s, DQN 3-step 27.9 s (all mps). The overnight numbers were 1.4–2× slower (shared machine).
+  - DreamerV3 size12m (10,498,259 params vs 687,875): fps/train 196 vs 764, env 1.53 vs 6.0 steps/s → ~3.9× slower, 100k ≈ 18 h projected. Peak RSS 6.5 GB in the 2k-step run.
+  - Stage 4 projection (training only, M2 Max): 1M × 3 seeds ≈ 0.5 h PPO, 1.4 h PPO-LSTM, 2.3 h DQN (+2.3 h DQN 3-step).
+- **Issues / open items:** the value check is correlational; a run with `repval_loss: False` is the firm test. Values are small, so the critic is still far from calibrated.
+- **Next:** repval-off run (~4.6 h) or the 200k sparse run (~9.5 h), one per night; teammates to try GPU compute.
 
 ### 2026-11-10 — DreamerV3 sparse reward, seeds 1–2 — MacBook Pro M2 Max
 - **Completed:** DreamerV3 ratio 128, sparse reward, seeds 1 and 2 (`configs/ablation_sparse_dreamer_size1m_r128_100k.yaml`), run back to back as the only job, on AC, with `caffeinate -i`; each followed by `dreamer_results`, `wm_eval` (64 batches) and `eval_dreamer` (11 step checkpoints, 0–100k). No near-duplicate end checkpoint this time (the fix works). Summary and figures refreshed (`results/ablation_sparse/summary.md`, `figures/ablation_sparse_dreamerv3_r128.png`, `figures/ablation_sparse_wm_error_dreamerv3_r128.png`); README updated.

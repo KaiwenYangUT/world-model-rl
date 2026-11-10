@@ -1,0 +1,29 @@
+# Timing only: DreamerV3 at the next model size up (size12m, ~12M parameters) on the M2 Max CPU,
+# to decide whether it is worth running here or only on a GPU. Same flags as
+# ablation_sparse_dreamer_size1m_r128_100k.yaml except the size preset, a short run, and no
+# in-loop eval rounds or upstream checkpoints during it. Read fps/train and fps/policy from
+# runs/timing/dreamerv3_size12m_r128/seed0/logdir/metrics.jsonl, peak memory from /usr/bin/time.
+# Compare with size1m ratio 128: fps/train ≈ 764 replay steps/s, fps/policy ≈ 6 env steps/s.
+#   .venv-dreamer/bin/python scripts/train_dreamer.py --config configs/timing_dreamer_size12m_r128.yaml --seed 0
+exp: timing
+method: dreamerv3_size12m_r128
+
+env:
+  target: place_table
+  reward_mode: sparse
+  length: 10000
+
+dreamer_flags:
+  configs: [crafter, size12m]
+  run.steps: 2000
+  run.train_ratio: 128
+  run.envs: 4
+  run.eval_envs: 2
+  run.eval_eps: 2           # one short round at start only (report_every below)
+  run.report_every: 100000  # seconds: no further eval rounds in a timing run
+  run.save_every: 100000    # seconds: no upstream checkpoints during the run
+  run.log_every: 60         # seconds: frequent fps readings
+  replay.size: 100000
+  jax.platform: cpu
+  jax.compute_dtype: float32
+  logger.outputs: [jsonl]

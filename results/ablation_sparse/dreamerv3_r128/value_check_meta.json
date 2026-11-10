@@ -1,0 +1,168 @@
+{
+  "started": "2026-11-10T14:33:04-05:00",
+  "command": [
+    "/Users/kevinyang/Desktop/ECE1508_RL_Project/.venv-dreamer/bin/python",
+    "scripts/value_check.py",
+    "--config",
+    "configs/analysis_value_check_sparse_r128.yaml"
+  ],
+  "config_path": "configs/analysis_value_check_sparse_r128.yaml",
+  "config": {
+    "run_config": "configs/ablation_sparse_dreamer_size1m_r128_100k.yaml",
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "checkpoints": [
+      50000,
+      90000,
+      100000
+    ],
+    "split": "train",
+    "n_episodes": 50,
+    "n_envs": 8,
+    "rng_seed": 1234,
+    "max_k": 40
+  },
+  "git": {
+    "commit": "884d2c69f167b50e4bc93799e56a6c0b9bbc0d39",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "cpu_count": 12,
+    "model": "Mac14,5",
+    "chip": "Apple M2 Max",
+    "perf_cores": 8,
+    "efficiency_cores": 4,
+    "memsize_bytes": 34359738368
+  },
+  "device": "cpu (jax)",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "1.26.4",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "jax": "0.4.33",
+    "jaxlib": "0.4.33"
+  },
+  "load_avg_start": [
+    5.36572265625,
+    3.5888671875,
+    2.708984375
+  ],
+  "finished": "2026-11-10T14:35:31-05:00",
+  "wall_clock_s": 147.73,
+  "load_avg_end": [
+    3.93798828125,
+    3.697265625,
+    2.88671875
+  ],
+  "run_config": {
+    "exp": "ablation_sparse",
+    "method": "dreamerv3_r128",
+    "env": {
+      "target": "place_table",
+      "reward_mode": "sparse",
+      "length": 10000
+    },
+    "ckpt_every_steps": 10000,
+    "eval": {
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    },
+    "dreamer_flags": {
+      "configs": [
+        "crafter",
+        "size1m"
+      ],
+      "run.steps": 100000,
+      "run.train_ratio": 128,
+      "run.envs": 4,
+      "run.eval_envs": 2,
+      "run.eval_eps": 20,
+      "run.report_every": 900,
+      "run.save_every": 600,
+      "run.log_every": 120,
+      "replay.size": 100000,
+      "jax.platform": "cpu",
+      "jax.compute_dtype": "float32",
+      "logger.outputs": [
+        "jsonl"
+      ]
+    }
+  },
+  "episodes": [
+    {
+      "seed": 0,
+      "ckpt_env_steps": 50000,
+      "episodes": 50,
+      "tables": 1,
+      "steps": 8167
+    },
+    {
+      "seed": 0,
+      "ckpt_env_steps": 90000,
+      "episodes": 50,
+      "tables": 4,
+      "steps": 8610
+    },
+    {
+      "seed": 0,
+      "ckpt_env_steps": 100000,
+      "episodes": 50,
+      "tables": 10,
+      "steps": 7727
+    },
+    {
+      "seed": 1,
+      "ckpt_env_steps": 50000,
+      "episodes": 50,
+      "tables": 3,
+      "steps": 8446
+    },
+    {
+      "seed": 1,
+      "ckpt_env_steps": 90000,
+      "episodes": 50,
+      "tables": 10,
+      "steps": 8522
+    },
+    {
+      "seed": 1,
+      "ckpt_env_steps": 100000,
+      "episodes": 50,
+      "tables": 12,
+      "steps": 8364
+    },
+    {
+      "seed": 2,
+      "ckpt_env_steps": 50000,
+      "episodes": 50,
+      "tables": 4,
+      "steps": 8429
+    },
+    {
+      "seed": 2,
+      "ckpt_env_steps": 90000,
+      "episodes": 50,
+      "tables": 2,
+      "steps": 8376
+    },
+    {
+      "seed": 2,
+      "ckpt_env_steps": 100000,
+      "episodes": 50,
+      "tables": 15,
+      "steps": 7319
+    }
+  ],
+  "analysis_wall_clock_s": 147.3
+}
