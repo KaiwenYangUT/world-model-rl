@@ -1,0 +1,127 @@
+{
+  "started": "2026-11-12T10:18:12-05:00",
+  "command": [
+    "/mnt/c/Users/Cosmo/Desktop/ece1508RL/world-model-rl-gpu-test/.venv-dreamer-cuda/bin/python",
+    "scripts/train_dreamer.py",
+    "--config",
+    "configs/dreamer_size1m_r128_cuda_250k.yaml",
+    "--seed",
+    "2"
+  ],
+  "config_path": "configs/dreamer_size1m_r128_cuda_250k.yaml",
+  "config": {
+    "exp": "standard_cuda_250k",
+    "method": "dreamerv3_r128",
+    "env": {
+      "target": "place_table",
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "ckpt_every_steps": 10000,
+    "eval": {
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    },
+    "dreamer_flags": {
+      "configs": [
+        "crafter",
+        "size1m"
+      ],
+      "run.steps": 250000,
+      "run.train_ratio": 128,
+      "run.envs": 4,
+      "run.eval_envs": 2,
+      "run.eval_eps": 20,
+      "run.report_every": -1,
+      "run.save_every": 600,
+      "run.log_every": 60,
+      "replay.size": 100000,
+      "jax.platform": "cuda",
+      "jax.compute_dtype": "bfloat16",
+      "jax.prealloc": false,
+      "logger.outputs": [
+        "jsonl"
+      ]
+    }
+  },
+  "git": {
+    "commit": "02a66a3161e3b22deb4ce3d0d076e5a4d1204a94",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "x86_64",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "cpu_count": 16,
+    "gpu": "NVIDIA GeForce RTX 3070"
+  },
+  "device": "cuda:0",
+  "python": "3.11.14",
+  "packages": {
+    "numpy": "1.26.4",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "jax": "0.4.33",
+    "jaxlib": "0.4.33"
+  },
+  "load_avg_start": [
+    1.2041015625,
+    1.13525390625,
+    1.05615234375
+  ],
+  "seed": 2,
+  "finished": "2026-11-12T11:06:03-05:00",
+  "wall_clock_s": 2870.49,
+  "load_avg_end": [
+    0.734375,
+    0.76318359375,
+    0.7509765625
+  ],
+  "argv": [
+    "--configs",
+    "crafter",
+    "size1m",
+    "--run.steps",
+    "250000",
+    "--run.train_ratio",
+    "128",
+    "--run.envs",
+    "4",
+    "--run.eval_envs",
+    "2",
+    "--run.eval_eps",
+    "20",
+    "--run.report_every",
+    "-1",
+    "--run.save_every",
+    "600",
+    "--run.log_every",
+    "60",
+    "--replay.size",
+    "100000",
+    "--jax.platform",
+    "cuda",
+    "--jax.compute_dtype",
+    "bfloat16",
+    "--jax.prealloc",
+    "False",
+    "--logger.outputs",
+    "jsonl",
+    "--logdir",
+    "/mnt/c/Users/Cosmo/Desktop/ece1508RL/world-model-rl-gpu-test/runs/standard_cuda_250k/dreamerv3_r128/seed2/logdir",
+    "--seed",
+    "2",
+    "--script",
+    "train_eval"
+  ],
+  "jax_version": "0.4.33",
+  "device_provenance": {
+    "runtime_log_in_gpu_test_copy": "logs/dreamer_cuda_standard_250k_seed2_train.log",
+    "timing_record": "timing.json",
+    "original_launcher_value": "cpu (jax)"
+  }
+}

@@ -4,7 +4,8 @@ ECE1508 reinforcement learning course project. We compare four reinforcement-lea
 methods on **Crafter**, a 2D Minecraft-like game with sparse rewards and a partial view of
 the world, under the same budget of game steps and the same evaluation code.
 
-**Status (2026-11-10):** preliminary results exist for all three research questions.
+**Status (2026-11-12):** preliminary results exist for all three research questions.
+Three 250k-step DreamerV3 runs per reward setting are complete on an RTX 3070.
 Final experiments run Nov 16 – Dec 4; results freeze on Dec 6.
 Full plan, decisions and run log: [PLAN.md](PLAN.md).
 
@@ -34,7 +35,7 @@ Full plan, decisions and run log: [PLAN.md](PLAN.md).
 | **DQN** | value-based | Learns a score for each action (expected future reward) from a memory of past moves, and picks the best one. | Stable-Baselines3; 3-step-return variant as second try |
 | **PPO** | policy-based | Learns action probabilities directly, with small, clipped updates from fresh play. | Stable-Baselines3, 8 games in parallel, no memory |
 | **PPO-LSTM** | policy-based + memory | PPO plus an LSTM memory of earlier frames (the agent sees only a small patch of the map). | sb3-contrib RecurrentPPO |
-| **DreamerV3** | model-based | Learns a world model (a learned simulator), then trains its policy on imagined play. | Official authors' code, smallest size (~0.7M parameters), CPU |
+| **DreamerV3** | model-based | Learns a world model (a learned simulator), then trains its policy on imagined play. | Official authors' code, smallest size (~0.7M parameters), CPU and CUDA |
 
 ## What has been done
 1. **Setup and baselines.**
@@ -52,7 +53,7 @@ Full plan, decisions and run log: [PLAN.md](PLAN.md).
    - DreamerV3: 100k steps × 3 seeds, plus one run each with 2× and 4× training updates.
    - A reward-sparsity ablation for PPO and for DreamerV3 with 4× updates (3 seeds each).
    - PPO at 1M steps, to compare with the Crafter paper.
-   - World-model error vs. imagination horizon for every DreamerV3 run.
+   - World-model error vs. imagination horizon for the original DreamerV3 runs.
 
 ## Preliminary results
 Success = placing a table. Final = last two checkpoints of each of 3 seeds, pooled
@@ -112,6 +113,56 @@ More figures: [generalization](figures/main_generalization.png),
 [reward ablation, DreamerV3](figures/ablation_sparse_dreamerv3_r128.png),
 [world-model error](figures/main_wm_error.png). Full table: [results/main/summary.md](results/main/summary.md).
 
+### Sparse-reward DreamerV3 at 250k on CUDA
+
+DreamerV3 `size1m`, train ratio 128, and BF16 ran from scratch on WSL2 with an RTX 3070
+for seeds 0–2. The sparse task gives +1 on the first table placement and ends that episode.
+The shared harness scored all 26 checkpoints from 0 to 250k, using 50 fixed training worlds
+and 50 fixed unseen worlds at each checkpoint for each seed (7,800 episodes total).
+[Run configuration](configs/ablation_sparse_dreamer_size1m_r128_cuda_250k.yaml)
+
+| Seed | Training worlds at 250k | Unseen worlds at 250k |
+|---|---:|---:|
+| 0 | 62% (31/50) | 60% (30/50) |
+| 1 | 46% (23/50) | 38% (19/50) |
+| 2 | 42% (21/50) | 42% (21/50) |
+| Mean | **50.0%** | **46.7%** |
+| Sample SD | 10.6 pp | 11.7 pp |
+
+The table uses the 250k checkpoint for each seed. At the same checkpoint, the existing sparse
+PPO-CNN baseline averaged 97.3% on training worlds and 82.0% on unseen worlds.
+[Endpoint CSV](results/ablation_sparse_cuda_250k/dreamerv3_r128/place_table_250k_summary.csv)
+· [Per-seed evaluations and timings](results/ablation_sparse_cuda_250k/dreamerv3_r128/)
+· [Sparse PPO comparison](figures/ablation_sparse_cuda_250k_ppo_comparison.png)
+
+![Sparse-reward DreamerV3 learning curves on training and unseen worlds](figures/ablation_sparse_cuda_250k_dreamerv3_r128_place_table_3seeds.png)
+
+### Standard-reward DreamerV3 at 250k on CUDA
+
+The standard runs used the same model, ratio, BF16 setup, seed IDs, and evaluation maps as the
+sparse runs. The shared harness scored all 26 checkpoints per seed, with 50 episodes per split
+at each checkpoint. Standard Crafter episodes continue after a table is placed and end at death
+or the time limit. [Run configuration](configs/dreamer_size1m_r128_cuda_250k.yaml)
+
+| Seed | Training worlds at 250k | Unseen worlds at 250k |
+|---|---:|---:|
+| 0 | 0% (0/50) | 0% (0/50) |
+| 1 | 40% (20/50) | 26% (13/50) |
+| 2 | 0% (0/50) | 0% (0/50) |
+| Mean | **13.3%** | **8.7%** |
+| Sample SD | 23.1 pp | 15.0 pp |
+
+At the exact 250k checkpoint, the sparse setting averaged 36.7 percentage points higher on
+training worlds and 38.0 points higher on unseen worlds. The reward and episode termination rules
+differ between the two settings. CUDA device and process times are recorded
+with each run. See §5 for the M2 Max compute-cost benchmarks. [PLAN.md](PLAN.md)
+[Endpoint comparison CSV](results/standard_cuda_250k/dreamerv3_r128/standard_vs_sparse_250k_summary.csv)
+· [Per-seed evaluations](results/standard_cuda_250k/dreamerv3_r128/)
+· [Run timing records](results/standard_cuda_250k/dreamerv3_r128/standard_vs_sparse_250k_timing.csv)
+· [Standard and sparse curves](figures/standard_vs_sparse_cuda_250k_place_table.png)
+
+![Standard-reward DreamerV3 learning curves on training and unseen worlds](figures/standard_cuda_250k_dreamerv3_r128_place_table_3seeds.png)
+
 ## Problems found and fixed
 - **No DreamerV3 learning curves:** upstream keeps only its latest checkpoint. Our launcher now
   also saves the agent every 10k game steps, and every one is scored by the shared harness
@@ -127,47 +178,42 @@ More figures: [generalization](figures/main_generalization.png),
 - **Evaluation noise:** 20 episodes per checkpoint gave intervals like 1–24%, so we use 50.
 
 ## Current problems and limitations
-- **DreamerV3 is too small and too slow here.** On this laptop it runs only on the CPU, so we use
+- **DreamerV3 on the M2 Max.** The Mac runs used the CPU, so we used
   the smallest model (~0.7M parameters) and few training updates per game step (train ratio 32,
   vs. 512 in the authors' Crafter setting with a much larger model). At ratio 32 (3 seeds) and
   ratio 64 (1 seed) its policy stays at random level.
-- **With 4× updates, DreamerV3 learns the wrong things.** At ratio 128 (1 seed) the world model
-  finally sees the unlock rewards and the policy clearly learns, but it goes for the easiest
-  +1s: saplings (97% vs. 51% for random play), wood, water, cows. It never places a table
-  (0 of 100 eval episodes), and its table rate during training falls from 7.6% in the first
-  20k steps to 0% in the last 20k. With the standard reward every achievement is worth the same
-  +1, and placing a table needs a longer chain (two wood, then the right tile), so the cheap
-  ones win at this budget. This is our reading of the numbers, not yet tested; the sparse-reward
-  run below tests it.
-- **DreamerV3 compute grows with the update ratio.** Training time grows roughly in proportion
-  to the ratio: 100k steps take ~1.5 h at ratio 32, 2.35 h at ratio 64 and 4.6 h at ratio 128
+- **The original standard-reward run favored easy achievements.** In the 100k M2 Max run at
+  ratio 128 (one seed), the world model detected some unlock rewards and the policy collected
+  saplings (97% vs. 51% for random play), wood, water, and cows. It placed no tables in 100 eval
+  episodes. Its table rate during training fell from 7.6% in the first 20k steps to 0% in the
+  last 20k. Standard reward gives each first achievement +1. Placing a table takes a longer
+  action sequence, which may help explain why the policy favored easier achievements.
+- **DreamerV3 compute on the M2 Max grows with the update ratio.** The 100k-step runs took
+  ~1.5 h at ratio 32, 2.35 h at ratio 64 and 4.6 h at ratio 128
   (~6 game steps/s; sparse-reward seeds 1 and 2, each run alone, took 4.65 h and 4.63 h).
-  Three seeds at ratio 128 are ~14 h, and each further DreamerV3 experiment costs the same
-  again. The authors' ratio 512 would be roughly 18 h per run at this size (an extrapolation,
-  not measured).
+  Three 100k-step seeds at ratio 128 take ~14 h on this machine. At this model size, the authors'
+  ratio 512 would take roughly 18 h per 100k-step run on the M2 Max (an extrapolation).
 - **A bigger DreamerV3 is out of reach on this laptop.** The next size up (size12m, 10.5M
   parameters vs 0.69M) trains ~3.9× slower at ratio 128 (1.5 vs 6 game steps/s, measured in a
   short run on the idle laptop), so 100k steps would take ~18 h per seed (projected). It only
   makes sense on a GPU.
-- **Only one machine can run DreamerV3.** Its runs peak at 10–13 GB of memory (9.9 GB at
-  ratio 32, 10.5–13.3 GB at ratio 128), more than the iMac's 8 GB, so all DreamerV3 runs share the
-  M2 Max with the Stage 4 runs of the other methods, one job at a time.
-- **Few DreamerV3 seeds.** Ratio 64 and the standard-reward ratio-128 run have one seed each, so
-  their differences from ratio 32 are not yet confirmed across seeds.
-- **DreamerV3 learns the table too late in 100k steps.** With the sparse reward all 3 seeds
+- **Mac memory limits.** On the M2 Max, DreamerV3 runs peak at 10–13 GB of memory (9.9 GB at
+  ratio 32, 10.5–13.3 GB at ratio 128), more than the iMac's 8 GB.
+- **Few seeds in the original Mac sweeps.** Ratio 64 and the original standard-reward ratio-128
+  run have one seed each, so their differences from ratio 32 are not yet confirmed across seeds.
+- **The original 100k DreamerV3 runs learn late.** With the sparse reward all 3 seeds
   reach 18–30% only at the last checkpoint, so "final" (the last two checkpoints, 90k and 100k)
-  is 18% / 17%, and we don't know where it would level off. A longer run would tell (our guess:
-  higher).
-- **DreamerV3's reward predictor misses the rewards that matter.** Even when the policy learns
-  the table, the world model never predicts the table reward (sparse run). RQ3 has to report
-  this; the value-network explanation above is supported by a check but not yet proven.
+  is 18% / 17%. The longer CUDA run reaches higher success rates and shows substantial
+  variation between seeds.
+- **The original sparse runs rarely predicted the table reward.** At 100k, the policy had begun
+  placing tables while the reward head missed nearly all observed table rewards. The value-network
+  check supports the `repval` hypothesis. A controlled ablation is still pending.
 - **DreamerV3 evaluation gaps (older runs).** The runs before the sparse-reward run have only
   their latest checkpoint scored by the harness (70k–97k of 100k steps), and their learning
   curves come from the in-loop evaluation, which plays only ~10 episodes per world set per round
   and is too noisy to say when learning starts. Re-running them with step checkpoints fixes this.
 - **RQ3 data:** measured on the agent's replay memory, not on a separate set of unseen-world games.
-- **Timing:** all numbers are from one laptop (MacBook Pro M2 Max, 32 GB); a faster machine,
-  especially one with an NVIDIA GPU, should be faster. The model-free methods were re-timed alone
+- **M2 Max timings:** the model-free methods were re-timed alone
   on the idle laptop (50k steps each, training only; [table](results/timing/summary.md)): per
   10k steps PPO 6.2 s, PPO-LSTM 16 s, DQN and DQN 3-step 28 s (on the Mac GPU). The older
   overnight timings were 1.4–2× slower because several jobs shared the laptop. The DreamerV3
@@ -177,14 +223,8 @@ More figures: [generalization](figures/main_generalization.png),
 
 ## Next steps
 1. **DreamerV3:**
-   - The sparse-reward runs (3 seeds) learn the table only at the very end. Next: one longer
-     run (200k steps, ~9.5 h) to see where it levels off.
-   - Re-run the standard-reward ratio-128 run with step checkpoints, so both reward settings
-     have harness learning curves.
-   - Confirm how the table reward reaches the policy: one sparse-reward run with the `repval`
-     loss turned off (~4.6 h).
-   - Look for an NVIDIA GPU (university cluster or cloud), which DreamerV3 is built for. The
-     next model size (size12m) needs ~18 h per 100k steps on this laptop.
+   - Test how the table reward reaches the policy with a controlled sparse-reward run that
+     sets the `repval` loss weight to zero.
 2. **Measurement:**
    - Collect separate unseen-world games for RQ3.
 3. **Final experiments (Nov 16 – Dec 4):**
@@ -241,6 +281,23 @@ C=configs/dreamer_size1m_r32_100k.yaml
 .venv-sb3/bin/python plots/plot_generalization.py --exp main
 .venv-sb3/bin/python plots/plot_wm_error.py --exp main
 .venv-sb3/bin/python plots/plot_ablation.py --method ppo_cnn
+```
+
+### CUDA 250k (Linux or WSL2)
+
+Use Python 3.11 on a CUDA-capable host and the same pinned DreamerV3 submodule and patch
+listed above. The shared evaluator reloads all saved step checkpoints.
+
+```bash
+uv venv --python 3.11 .venv-dreamer-cuda
+uv pip install --python .venv-dreamer-cuda/bin/python --link-mode copy \
+  -r requirements-dreamer.lock "jax[cuda12]==0.4.33"
+C=configs/ablation_sparse_dreamer_size1m_r128_cuda_250k.yaml
+# For standard reward, use C=configs/dreamer_size1m_r128_cuda_250k.yaml
+for s in 0 1 2; do
+  .venv-dreamer-cuda/bin/python scripts/train_dreamer.py --config "$C" --seed "$s"
+  .venv-dreamer-cuda/bin/python scripts/eval_dreamer.py --config "$C" --seed "$s"
+done
 ```
 
 ## Acknowledgements

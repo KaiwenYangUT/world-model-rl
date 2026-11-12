@@ -1,0 +1,5 @@
+exp,reward_mode,ckpt_env_steps,split,episodes_per_seed,n_training_seeds,seed_0_success_rate,seed_1_success_rate,seed_2_success_rate,mean_success_rate,sample_sd_success_rate
+standard_cuda_250k,crafter,250000,train,50,3,0.000000,0.400000,0.000000,0.133333,0.230940
+standard_cuda_250k,crafter,250000,heldout,50,3,0.000000,0.260000,0.000000,0.086667,0.150111
+ablation_sparse_cuda_250k,sparse,250000,train,50,3,0.620000,0.460000,0.420000,0.500000,0.105830
+ablation_sparse_cuda_250k,sparse,250000,heldout,50,3,0.600000,0.380000,0.420000,0.466667,0.117189

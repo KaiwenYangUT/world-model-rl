@@ -1,0 +1,16 @@
+{
+  "seed": 2,
+  "gpu": "NVIDIA GeForce RTX 3070",
+  "jax_device_from_runtime_log": "cuda:0",
+  "training_started": "2026-11-12T10:18:12-05:00",
+  "training_finished": "2026-11-12T11:06:03-05:00",
+  "evaluation_started": "2026-11-12T11:06:06-05:00",
+  "evaluation_finished": "2026-11-12T11:31:19-05:00",
+  "train_process_wall_seconds": 2872.64,
+  "eval_process_wall_seconds": 1516.038,
+  "combined_process_wall_seconds": 4388.678,
+  "eval_harness_wall_seconds_excluding_agent_initialization": 1458.43,
+  "checkpoints_evaluated": 26,
+  "evaluation_episodes": 2600,
+  "optimizer_updates_at_250k": 31091
+}

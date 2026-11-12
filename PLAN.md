@@ -1,21 +1,24 @@
-# PLAN — DQN / PPO / PPO-LSTM / DreamerV3 on Crafter (Apple Silicon, CPU-first)
+# PLAN — DQN / PPO / PPO-LSTM / DreamerV3 on Crafter (Apple Silicon and CUDA)
 
 > **Source of truth for the project.** Anyone who finishes a work session must:
 > (1) update task statuses in §Task list, (2) update **Current status**, (3) add a dated entry to §Progress log.
 > Statuses: `todo` · `in progress` · `done` · `blocked`.
 
 ## Current status
-- **Date:** 2026-11-10
+- **Date:** 2026-11-12
 - **Stage:** Stages 0–3 done in preliminary form on the M2 Max. All four methods ran through the pipeline, and **preliminary results exist for RQ1, RQ2, and RQ3** (see *Preliminary results* below). The week-1 gate (§6) passes for PPO and DreamerV3. Repo is on GitHub (`KaiwenYangUT/world-model-rl`).
+- **Latest result:** the CUDA DreamerV3 `size1m` ratio-128 runs finished at 250k on seeds 0–2
+  for both reward settings. At the exact 250k checkpoint, mean place-table success was
+  **13.3% training / 8.7% held-out** with standard reward and **50.0% / 46.7%** with sparse reward.
+  [Endpoint comparison CSV](results/standard_cuda_250k/dreamerv3_r128/standard_vs_sparse_250k_summary.csv)
 - **Next action:**
   1. Read the preliminary results and decide the Stage 4 budget and settings.
-  2. DreamerV3: with the sparse reward at ratio 128 it learns `place_table`, but only from ~80–90k steps (3 seeds: 17.7% / 17.0% final, 24.7% / 22.7% at 100k). Next: one 200k-step run (~9.5 h) to see where it levels off; re-run standard-reward ratio 128 with step checkpoints for a harness curve.
+  2. ~~Run the matched standard-reward 250k comparison~~ done 2026-11-12 (T30).
   3. T15 + T16 proper: held-out trajectories for RQ3.
   4. ~~Step-indexed DreamerV3 checkpoints~~ done 2026-11-09 (`ckpt_every_steps` in the config; first used by the sparse ablation run).
   5. ~~Re-time PPO/DQN/PPO-LSTM on an idle machine~~ done 2026-11-10 (T26); ~~time DreamerV3 size12m~~ done (T27: ~18 h per 100k on CPU, GPU only); ~~critic value check~~ done (T28).
-  6. Confirm the repval path: one sparse-reward ratio-128 run with `repval_loss: False` (~4.6 h).
-  7. Teammates: try their compute (ideally an NVIDIA GPU) for DreamerV3.
-- **Nothing is running.** Timing runs and the value check finished at 14:52 on 2026-11-10.
+  6. Test the `repval` contribution in a separate controlled sparse-reward ratio-128 run.
+- **CUDA run status:** the 250k standard-reward batch finished at 11:31 Toronto time on 2026-11-12.
 - **Blockers:** none. Timings from before 2026-11-10 are provisional (several jobs shared the machine); the 2026-11-10 timing runs (T26, T27) and the sparse seeds 1–2 ran alone.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
@@ -158,6 +161,21 @@ python3.11 -c "import torch;print(torch.__version__, torch.backends.mps.is_avail
 - Re-check the device for DQN (batch 32, an update every 4 steps) and RecurrentPPO; small batches may favour CPU.
 - JAX runs CPU-only here.
 
+### RTX 3070 workstation (CUDA experiment host), verified 2026-11-12 (T23)
+| Item | Value | Note |
+|---|---|---|
+| CPU | Intel Core i7-11700KF | x86-64, 16 logical CPUs |
+| GPU | NVIDIA GeForce RTX 3070, **8 GiB VRAM**, Windows driver 621.01 | `nvidia-smi` |
+| RAM | 31.9 GiB usable on Windows | WSL2 reports 15 GiB RAM and 4 GiB swap |
+| Host OS | Windows 11 Home 25H2 (build 26200) | WSL2 enabled |
+| Linux environment | Ubuntu 24.04.3 LTS under WSL2 | kernel `6.6.87.2-microsoft-standard-WSL2` |
+| Python | **3.11.14** in `.venv-dreamer-cuda` | separate DreamerV3 environment |
+| JAX | **0.4.33**, CUDA 12 plugin | training and evaluation logged `cuda:0` |
+
+Run-level process durations and device provenance accompany the evaluation records. The
+M2 Max remains the source of the compute-cost benchmarks in §5.
+[Run timing records](results/standard_cuda_250k/dreamerv3_r128/standard_vs_sparse_250k_timing.csv)
+
 ---
 
 ## 2. Feasibility research (sources checked 2026-11-04)
@@ -286,7 +304,8 @@ Our shared harness depends only on numpy, crafter, and gymnasium, so it runs in 
 ### Stage 4 — final experiments (Nov 16–Dec 4; **results frozen Dec 6**)
 - **Main runs:**
   - 4 methods × 3 seeds × B, with generalization eval on every checkpoint.
-  - DreamerV3 runs on the M2 Max; model-free seeds can go to the iMac or teammates' laptops.
+  - DreamerV3 runs can use the M2 Max or the RTX 3070 test copy. Model-free seeds can go to the
+    iMac or teammates' laptops.
 - **RQ3:** world-model error vs horizon (§8).
 - **Ablation:** reward sparsity (`crafter` vs `sparse`) for PPO and DreamerV3 × 3 seeds. Alternative: DreamerV3 train_ratio {16, 32, 64}, only if the team prefers it and it fits.
 - **Demos:** GIFs of the best seed per method on held-out seeds, plus an imagined-vs-real strip for Dreamer.
@@ -432,12 +451,14 @@ ECE1508_RL_Project/
 | T20 | Stage 4 main runs (4 methods × 3 seeds) | `results/main` | T08, T11–T14, gate | 1–2 weeks of nights | split by machine | todo | |
 | T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | done for PPO and DreamerV3 ratio 128 (3 seeds each) | Kevin |
 | T22 | ★ Report skeleton + related work | report draft | – | ongoing | **yes** | todo | |
-| T23 | (Optional) CUDA path if a GPU appears | timing comparison | T11 | 2–4 h | yes | todo | |
+| T23 | CUDA path on the RTX 3070 | machine check and run verification | T11 | 2–4 h | yes | done (WSL2 CUDA verified) | Codex (RTX 3070) |
 | T24 | ★ Multi-machine run sheet + results merge procedure | run sheet in this file | T07 | 1–2 h | **yes** | todo | |
 | T25 | Presentation figures and slides (from frozen results) | slides | T20, T21, T16 | 1–2 days | partly | todo | |
 | T26 | Re-time PPO / PPO-LSTM / DQN / DQN 3-step on the idle M2 Max | `results/timing/summary.md` | – | 15 min | – | done (2026-11-10) | Kevin |
 | T27 | DreamerV3 size12m CPU timing | §5 row | – | 10 min | – | done (2026-11-10; ~18 h per 100k projected → GPU only) | Kevin |
 | T28 | RQ3: critic value before table placements (`scripts/value_check.py`) | `value_check.csv`, figure | T21 | 2 h | – | done (2026-11-10; supports the repval path; firm test = repval-off run, todo) | Kevin |
+| T29 | Sparse-reward DreamerV3 size1m, ratio 128, CUDA, 250k × 3 seeds | `results/ablation_sparse_cuda_250k`, two figures | T23 | see run records | no | done (2026-11-12) | Codex (RTX 3070) |
+| T30 | Matched 250k × 3-seed standard-reward DreamerV3 run in the GPU test copy | `results/standard_cuda_250k`, two figures | T29 | see run records | no | done (2026-11-12) | Codex (RTX 3070) |
 
 **Suggested split:**
 - **Critical path:** T00–T08 and T10–T11 on the M2 Max.
@@ -451,10 +472,11 @@ ECE1508_RL_Project/
 1. **Environment:** Crafter (2D top-down Minecraft-like), not 3D. Craftium is Linux-only and fails in Docker on Apple Silicon (craftium issue #32). The proposal pre-authorized this fallback.
 2. **Scale:**
    - DreamerV3 `size1m` (≈1M params, vs up to 200M+ in the paper).
-   - train_ratio ≤ 32 (vs Crafter's default 512).
+   - train ratios 32–128 in the local `size1m` runs (vs Crafter's default 512).
    - Budgets 100k–250k (vs the 1M benchmark).
    - So this is a small-compute study, not comparable to published scores.
-3. **Compute:** Apple Silicon only (M2 Max 32 GB primary), DreamerV3 on CPU via JAX. The cost table comes from the M2 Max; hardware is logged for every run.
+3. **Compute:** M2 Max (32 GB) for the original DreamerV3 CPU runs and RTX 3070 under WSL2
+   for both 250k CUDA reward settings. The report's compute-cost benchmark uses the idle M2 Max.
 4. **Generalization:** finite train-seed pool vs held-out seeds.
 5. **Metric:** training on the standard Crafter reward. Headline = place_table success (also collect_wood and make_wood_pickaxe) and mean return. Crafter score is secondary.
 6. **Ablation:** reward sparsity (standard vs target-only) for PPO and DreamerV3.
@@ -471,6 +493,56 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-12 — review of the 250k CUDA results for team sync
+- **Completed:** checked the synchronized artifacts, README and PLAN against the Git baseline and
+  contribution rules. Recomputed the fixed 250k results from the shared-harness episode records
+  and verified the evaluation grids, fixed maps, timing records, figures, and links. The original
+  experiment tables, M2 Max compute budget, and RQ3 protocol were preserved.
+  [Endpoint comparison CSV](results/standard_cuda_250k/dreamerv3_r128/standard_vs_sparse_250k_summary.csv)
+- **Next:** follow the [team notice step](CONTRIBUTING.md#rules) for the `main` sync, then continue
+  with independent held-out trajectories for RQ3 and the controlled `repval` comparison.
+
+### 2026-11-12 — standard-reward DreamerV3 at 250k — RTX 3070 (WSL2)
+- **Completed:** trained `size1m` at ratio 128 in CUDA BF16 from scratch on seeds 0–2. The shared
+  harness verified 78 checkpoints from 0 to 250k at 10k intervals and 7,800 episodes, using the
+  same 50 fixed training and 50 fixed held-out worlds per checkpoint and seed as the sparse runs.
+  [Configuration](configs/dreamer_size1m_r128_cuda_250k.yaml)
+- **Measurements:** at 250k, training / held-out place-table success was 0% / 0%, 40% / 26% and
+  0% / 0% for seeds 0, 1 and 2. Mean ± sample SD was **13.3% ± 23.1 pp** on training worlds and
+  **8.7% ± 15.0 pp** on held-out worlds. The sparse setting averaged **50.0% ± 10.6 pp** and
+  **46.7% ± 11.7 pp**, respectively, higher by 36.7 and 38.0 percentage points.
+  [Endpoint comparison CSV](results/standard_cuda_250k/dreamerv3_r128/standard_vs_sparse_250k_summary.csv)
+- **Run provenance:** process durations for training and shared evaluation include startup and
+  compilation. Training and evaluation logged `cuda:0`.
+  [Run timing records](results/standard_cuda_250k/dreamerv3_r128/standard_vs_sparse_250k_timing.csv)
+- **Figures:** [three-seed learning curves](figures/standard_cuda_250k_dreamerv3_r128_place_table_3seeds.png)
+  and [standard vs. sparse](figures/standard_vs_sparse_cuda_250k_place_table.png).
+- **Interpretation:** the standard setting produced table placements at 250k in one of three
+  seeds. The two settings differ in reward and episode termination. Standard episodes end at
+  death or the time limit. Sparse episodes also end on the first table placement.
+- **Next:** collect independent held-out trajectories for RQ3 (T15/T16) and test the `repval`
+  contribution in a controlled sparse-reward run.
+
+### 2026-11-12 — sparse-reward DreamerV3 at 250k — RTX 3070 (WSL2)
+- **Completed:** trained `size1m` at ratio 128 in BF16 from scratch for seeds 0–2. The target-only
+  task awards +1 and ends the episode on the first table placement. The shared harness evaluated
+  every 10k checkpoint from 0 to 250k, using 50 fixed training and 50 fixed held-out worlds at
+  each checkpoint per seed. All 78 checkpoints and 7,800 episodes were verified.
+  [Configuration](configs/ablation_sparse_dreamer_size1m_r128_cuda_250k.yaml)
+- **Measurements:** at the exact 250k checkpoint, training / held-out success for seeds 0, 1 and 2
+  was 62% / 60%, 46% / 38% and 42% / 42%. Mean ± sample SD was **50.0% ± 10.6 pp** on
+  training worlds and **46.7% ± 11.7 pp** on held-out worlds. The existing sparse PPO-CNN
+  comparison uses the same checkpoint and eval worlds and averages 97.3% / 82.0%.
+  [Endpoint CSV](results/ablation_sparse_cuda_250k/dreamerv3_r128/place_table_250k_summary.csv)
+- **Run provenance:** process durations for training and shared evaluation include startup and
+  compilation. The runtime logs recorded `cuda:0`.
+  [Per-seed evaluations and run timing records](results/ablation_sparse_cuda_250k/dreamerv3_r128/)
+- **Figures:** [three-seed learning curves](figures/ablation_sparse_cuda_250k_dreamerv3_r128_place_table_3seeds.png)
+  and [sparse PPO comparison](figures/ablation_sparse_cuda_250k_ppo_comparison.png).
+- **Next:** run the standard-reward 250k comparison on seeds 0–2 in the GPU test copy and
+  score every checkpoint with the same harness. Standard Crafter mode ends episodes at
+  death or the time limit.
 
 ### 2026-11-10 (afternoon) — value check and timing runs — MacBook Pro M2 Max
 - **Completed:**
