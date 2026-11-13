@@ -1,0 +1,19 @@
+{
+  "eval_source": "dreamerv3 train_eval in-loop eval driver (not the shared harness; scripts/eval_dreamer.py scores the final checkpoint)",
+  "n_train_envs": 4,
+  "n_train_episodes": 1292,
+  "n_eval_rounds": 9,
+  "eval_episodes_per_round": [
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20,
+    20
+  ],
+  "last_global_env_steps": 498560,
+  "resume_step_offset": 247020
+}

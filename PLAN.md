@@ -443,12 +443,12 @@ ECE1508_RL_Project/
 | T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | done (every 10k-step checkpoint for runs with `ckpt_every_steps`, else final checkpoint only; eval reproducible byte for byte) | Kevin |
 | T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-state adapter test in `tests/test_sb3_adapter.py`) | Kevin |
 | T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds + 3-step variant) | Kevin |
-| T15 | ★ Held-out trajectory collector | `collect_heldout.py` + npz | T12 | 3–4 h | **yes** | todo | |
+| T15 | ★ Held-out trajectory collector | `collect_heldout.py` + npz | T12 | 3–4 h | **yes** | in progress | Haozhe |
 | T16 | ★ `wm_eval` patch + script + plot | `wm_error.csv`, figure | T10 (any checkpoint), T15 | 1 day | **yes** | in progress (preliminary: on replay buffers, not T15 trajectories) | Kevin |
-| T17 | ★ Demo GIF tool (incl. Dreamer imagined-vs-real) | `make_demo.py` | T06 | 4 h | **yes** | todo | |
+| T17 | ★ Demo GIF tool (incl. Dreamer imagined-vs-real) | `make_demo.py` | T06 | 4 h | **yes** | in progress | Haozhe |
 | T18 | ★ TA update note (§10) | email text | T04 | 1 h | **yes** | todo | |
 | T19 | ★ README with exact reproduction commands (kept current) | `README.md` | ongoing | ongoing | **yes** | in progress (first version 2026-11-05) | Kevin |
-| T20 | Stage 4 main runs (4 methods × 3 seeds) | `results/main` | T08, T11–T14, gate | 1–2 weeks of nights | split by machine | todo | |
+| T20 | Stage 4 main runs (4 methods × 3 seeds) | `results/main` | T08, T11–T14, gate | 1–2 weeks of nights | split by machine | ongoing (Haozhe completed PPO CNN 500k × 3 seeds; DreamerV3 1M ratio 128 500k × 3; DreamerV3 12M ratio 128 continued 250k→500k × 3) | Haozhe (PPO/Dreamer subset) |
 | T21 | Ablation runs (reward sparsity) | `results/ablation` | T20 setup | compute | split by machine | done for PPO and DreamerV3 ratio 128 (3 seeds each) | Kevin |
 | T22 | ★ Report skeleton + related work | report draft | – | ongoing | **yes** | todo | |
 | T23 | CUDA path on the RTX 3070 | machine check and run verification | T11 | 2–4 h | yes | done (WSL2 CUDA verified) | Codex (RTX 3070) |
@@ -485,6 +485,7 @@ ECE1508_RL_Project/
 ---
 
 ## Progress log
+
 Newest entry first. Template:
 ```
 ### YYYY-MM-DD — <name> — <machine>
@@ -493,6 +494,11 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-12 21:26 EST — Haozhe — Linux
+- **Completed:** Set up and validated the two CUDA environments. Stage 1 completed DreamerV3 12M with the standard reward for 250k steps on seeds 0/1/2. Stage 2 completed PPO 500k and DreamerV3 1M 500k from scratch, and continued DreamerV3 12M from about 250k to a global 500k. Shared evaluation, replay-based world-model diagnostics, summaries, and eight final figures are complete. Final train / held-out `place_table` success is PPO 88.0% / 75.0%, DreamerV3 1M 1.7% / 3.0%, and DreamerV3 12M 93.3% / 77.0%. Results are stored in `results/haozhe_stage1/` and `results/haozhe_stage2/`; final figures are stored in `figures/haozhe_stage2_crafter_standard_reward_500k/`.
+- **Issues / blockers:** Policy performance has already been evaluated on both training and held-out worlds. The current RQ3 world-model diagnostics use replay buffers rather than a separate held-out-only trajectory dataset. Dreamer also requires substantially more compute while achieving performance similar to, or only slightly better than, PPO. Nothing is currently running.
+- **Next:** Implement the T15 held-out trajectory collector, then build the T17 policy and imagined-vs-real demos. Summarize the RTX 5070 Ti timing separately without taking the shared T23 task.
 
 ### 2026-11-12 — review of the 250k CUDA results for team sync
 - **Completed:** checked the synchronized artifacts, README and PLAN against the Git baseline and

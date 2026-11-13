@@ -87,7 +87,8 @@ def main():
     rel = os.path.join(cfg["exp"], cfg["method"], f"seed{args.seed}")
     logdir = os.path.join(REPO_ROOT, "runs", rel, "logdir")
     results_dir = os.path.join(REPO_ROOT, "results", rel)
-    meta = RunMeta(cfg, config_path=args.config, device="cpu (jax)")
+    jax_device = cfg.get("dreamer_flags", {}).get("jax.platform", "cpu")
+    meta = RunMeta(cfg, config_path=args.config, device=f"{jax_device} (jax)")
     meta.data["seed"] = args.seed
 
     dreamer_main, config = build_config(cfg, args.seed, logdir)

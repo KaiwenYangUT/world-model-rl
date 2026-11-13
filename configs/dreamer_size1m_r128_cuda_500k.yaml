@@ -1,0 +1,34 @@
+# DreamerV3 size1m from scratch, 500k total environment steps.
+# Standard Crafter reward; independent seeds are supplied with --seed 0/1/2.
+exp: haozhe_stage2
+method: dreamerv3_size1m_r128_crafter_500k
+
+env:
+  target: place_table
+  reward_mode: crafter
+  length: 10000
+
+ckpt_every_steps: 10000
+eval:
+  n_episodes: 50
+  n_envs: 8
+  rng_seed: 1234
+  splits: [train, heldout]
+
+dreamer_flags:
+  configs: [crafter, size1m]
+  batch_size: 16
+  batch_length: 64
+  run.steps: 500000
+  run.train_ratio: 128
+  run.envs: 4
+  run.eval_envs: 2
+  run.eval_eps: 20
+  run.report_every: 900
+  run.save_every: 600
+  run.log_every: 120
+  replay.size: 100000
+  jax.platform: cuda
+  jax.compute_dtype: float32
+  jax.prealloc: false
+  logger.outputs: [jsonl]

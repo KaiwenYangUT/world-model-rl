@@ -300,6 +300,60 @@ for s in 0 1 2; do
 done
 ```
 
+## Linux / NVIDIA experiments (Haozhe)
+
+This section only describes Haozhe's environments and runs.
+
+### Environment
+
+Validated on Linux x86_64 with Python 3.11.18. PPO/SB3 uses PyTorch CUDA 12.8 in
+`venv_baseline`; JAX/DreamerV3 uses the CUDA 12 plugin in `venv_dreamer`. Both environments
+run training on the GPU. Their Linux/CUDA dependency locks are separate from the original
+macOS locks:
+
+```bash
+uv venv --python 3.11 venv_baseline
+uv pip install --python venv_baseline/bin/python -r requirements-baseline-nvidia.lock \
+  --extra-index-url https://download.pytorch.org/whl/cu128
+uv venv --python 3.11 venv_dreamer
+uv pip install --python venv_dreamer/bin/python -r requirements-dreamer-nvidia.lock
+```
+
+The installed baseline environment uses torch 2.11.0+cu128 and SB3/sb3-contrib 2.9.2.
+DreamerV3 uses JAX/JAXLIB 0.6.2 with CUDA 12 plugins and NumPy 1.26.4. These versions and
+the NVIDIA hardware differ from the earlier macOS runs, so timing comparisons must be reported
+separately.
+
+### Completed standard-reward runs
+
+All runs use the shared Crafter `place_table` task and shared evaluation harness. Each method
+has independent training seeds 0, 1 and 2.
+
+| Method | Training budget | Train success | Held-out success | Gap |
+|---|---:|---:|---:|---:|
+| PPO CNN | 500k from scratch | 88.0% | 75.0% | +13.0 pp |
+| DreamerV3 1M, ratio 128 | 500k from scratch | 1.7% | 3.0% | -1.3 pp |
+| DreamerV3 12M, ratio 128 | continued from 250k to 500k | 93.3% | 77.0% | +16.3 pp |
+
+The table pools the 490k and 500k checkpoints: 300 episodes per method and split. DreamerV3
+12M has the highest point estimates, but its intervals overlap PPO's, so this is not evidence of
+a statistically significant difference. DreamerV3 1M did not reliably learn `place_table`.
+
+The 12M continuation restores each complete Stage 1 checkpoint, training replay and evaluation
+replay at approximately 247k–249k environment steps. It then trains to a global total of 500k;
+it does not add another 500k steps. Its final learning curve combines Stage 1 at 0–240k with the
+continued branch at 250–500k.
+
+### Files and reproduction
+
+- Configs: `configs/ppo_cnn_cuda_500k.yaml`, `configs/dreamer_size1m_r128_cuda_500k.yaml`,
+  `configs/dreamer_size12m_r128_cuda_250k.yaml`, and
+  `configs/dreamer_size12m_r128_cuda_500k_resume.yaml`.
+- Checkpoints, replay and logs: `runs/haozhe_stage1/` and `runs/haozhe_stage2/`.
+- Evaluation and world-model diagnostics: `results/haozhe_stage1/` and
+  `results/haozhe_stage2/`.
+- Final eight figures: `figures/haozhe_stage2_crafter_standard_reward_500k/`.
+
 ## Acknowledgements
 AI coding assistants were used to help with parts of the implementation.
 

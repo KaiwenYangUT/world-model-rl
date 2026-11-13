@@ -1,0 +1,89 @@
+{
+  "started": "2026-11-12T03:58:31-05:00",
+  "command": [
+    "/home/haozhe/Desktop/ece1508proj/world-model-rl/venv_baseline/bin/python",
+    "scripts/train_sb3.py",
+    "--config",
+    "configs/ppo_cnn_cuda_500k.yaml",
+    "--seed",
+    "1"
+  ],
+  "config_path": "configs/ppo_cnn_cuda_500k.yaml",
+  "config": {
+    "exp": "haozhe_stage2",
+    "method": "ppo_cnn_500k",
+    "algo": "PPO",
+    "policy": "CnnPolicy",
+    "total_steps": 500000,
+    "n_envs": 8,
+    "vec_env": "subproc",
+    "device": "cuda",
+    "warm_cache": true,
+    "env": {
+      "target": "place_table",
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "algo_kwargs": {
+      "n_steps": 128,
+      "n_epochs": 4,
+      "batch_size": 256,
+      "learning_rate": 0.00025,
+      "clip_range": 0.1,
+      "vf_coef": 0.5,
+      "ent_coef": 0.01
+    },
+    "eval": {
+      "every": 10000,
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "policy": "sample",
+      "device": "cpu",
+      "workers": 1,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    }
+  },
+  "git": {
+    "commit": "02a66a3161e3b22deb4ce3d0d076e5a4d1204a94",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "x86_64",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "cpu_count": 24
+  },
+  "device": "cuda",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "1.26.4",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "torch": "2.11.0+cu128",
+    "stable_baselines3": "2.9.2",
+    "sb3_contrib": "2.9.2"
+  },
+  "load_avg_start": [
+    1.1279296875,
+    1.17578125,
+    1.1455078125
+  ],
+  "seed": 1,
+  "finished": "2026-11-12T04:01:34-05:00",
+  "wall_clock_s": 183.0,
+  "load_avg_end": [
+    2.33642578125,
+    1.76708984375,
+    1.3984375
+  ],
+  "env_steps": 500736,
+  "train_wall_clock_s": 160.62,
+  "warmup_s": 20.73,
+  "wall_clock_per_10k_steps_s": 3.21,
+  "train_sps": 3117.5,
+  "torch_version": "2.11.0+cu128",
+  "n_train_episodes": 2702
+}

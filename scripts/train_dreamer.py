@@ -123,7 +123,8 @@ def main():
     log_dir = os.path.join(run_dir, "episodes")
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(results_dir, exist_ok=True)
-    meta = RunMeta(cfg, config_path=args.config, device="cpu (jax)")
+    jax_device = cfg.get("dreamer_flags", {}).get("jax.platform", "cpu")
+    meta = RunMeta(cfg, config_path=args.config, device=f"{jax_device} (jax)")
     meta.data["seed"] = args.seed
     t0 = time.time()
 

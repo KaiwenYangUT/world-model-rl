@@ -1,0 +1,10 @@
+# Linux x86_64, Python 3.11. Install torch separately from the cu128 index.
+# Freeze the validated environment to requirements-baseline-nvidia.lock.
+torch==2.11.0+cu128
+stable-baselines3==2.9.2
+sb3-contrib==2.9.2
+crafter==1.8.3
+gymnasium==1.4.0
+numpy==1.26.4
+matplotlib==3.11.2
+ipykernel==7.4.0  # VS Code notebook kernel

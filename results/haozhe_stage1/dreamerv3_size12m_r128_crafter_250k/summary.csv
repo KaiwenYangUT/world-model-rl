@@ -1,0 +1,4 @@
+seed,train_status,eval_status,train_success,heldout_success,gap_pp,complete
+0,passed,passed,0.61,0.63,-2.0000000000000018,True
+1,passed,passed,0.46,0.48,-1.9999999999999962,True
+2,passed,passed,0.69,0.63,5.999999999999995,True

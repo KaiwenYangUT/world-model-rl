@@ -1,0 +1,36 @@
+# PPO baseline from scratch, 500k total environment steps.
+# Standard Crafter reward; independent seeds are supplied with --seed 0/1/2.
+exp: haozhe_stage2
+method: ppo_cnn_500k
+algo: PPO
+policy: CnnPolicy
+total_steps: 500000
+n_envs: 8
+vec_env: subproc
+device: cuda
+warm_cache: true
+
+env:
+  target: place_table
+  reward_mode: crafter
+  length: 10000
+
+# Same Atari-style PPO hyperparameters as the existing PPO baselines.
+algo_kwargs:
+  n_steps: 128
+  n_epochs: 4
+  batch_size: 256
+  learning_rate: 2.5e-4
+  clip_range: 0.1
+  vf_coef: 0.5
+  ent_coef: 0.01
+
+eval:
+  every: 10000
+  n_episodes: 50
+  n_envs: 8
+  rng_seed: 1234
+  policy: sample
+  device: cpu
+  workers: 1
+  splits: [train, heldout]

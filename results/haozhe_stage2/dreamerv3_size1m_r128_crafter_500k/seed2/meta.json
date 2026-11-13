@@ -1,0 +1,127 @@
+{
+  "started": "2026-11-12T08:20:34-05:00",
+  "command": [
+    "/home/haozhe/Desktop/ece1508proj/world-model-rl/venv_dreamer/bin/python",
+    "scripts/train_dreamer.py",
+    "--config",
+    "configs/dreamer_size1m_r128_cuda_500k.yaml",
+    "--seed",
+    "2"
+  ],
+  "config_path": "configs/dreamer_size1m_r128_cuda_500k.yaml",
+  "config": {
+    "exp": "haozhe_stage2",
+    "method": "dreamerv3_size1m_r128_crafter_500k",
+    "env": {
+      "target": "place_table",
+      "reward_mode": "crafter",
+      "length": 10000
+    },
+    "ckpt_every_steps": 10000,
+    "eval": {
+      "n_episodes": 50,
+      "n_envs": 8,
+      "rng_seed": 1234,
+      "splits": [
+        "train",
+        "heldout"
+      ]
+    },
+    "dreamer_flags": {
+      "configs": [
+        "crafter",
+        "size1m"
+      ],
+      "batch_size": 16,
+      "batch_length": 64,
+      "run.steps": 500000,
+      "run.train_ratio": 128,
+      "run.envs": 4,
+      "run.eval_envs": 2,
+      "run.eval_eps": 20,
+      "run.report_every": 900,
+      "run.save_every": 600,
+      "run.log_every": 120,
+      "replay.size": 100000,
+      "jax.platform": "cuda",
+      "jax.compute_dtype": "float32",
+      "jax.prealloc": false,
+      "logger.outputs": [
+        "jsonl"
+      ]
+    }
+  },
+  "git": {
+    "commit": "02a66a3161e3b22deb4ce3d0d076e5a4d1204a94",
+    "dirty": true
+  },
+  "hardware": {
+    "machine": "x86_64",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "cpu_count": 24
+  },
+  "device": "cuda (jax)",
+  "python": "3.11.18",
+  "packages": {
+    "numpy": "1.26.4",
+    "crafter": "1.8.3",
+    "gymnasium": "1.4.0",
+    "jax": "0.6.2",
+    "jaxlib": "0.6.2"
+  },
+  "load_avg_start": [
+    1.0,
+    1.119140625,
+    1.26318359375
+  ],
+  "seed": 2,
+  "finished": "2026-11-12T09:26:18-05:00",
+  "wall_clock_s": 3943.24,
+  "load_avg_end": [
+    0.4228515625,
+    0.646484375,
+    0.71728515625
+  ],
+  "argv": [
+    "--configs",
+    "crafter",
+    "size1m",
+    "--batch_size",
+    "16",
+    "--batch_length",
+    "64",
+    "--run.steps",
+    "500000",
+    "--run.train_ratio",
+    "128",
+    "--run.envs",
+    "4",
+    "--run.eval_envs",
+    "2",
+    "--run.eval_eps",
+    "20",
+    "--run.report_every",
+    "900",
+    "--run.save_every",
+    "600",
+    "--run.log_every",
+    "120",
+    "--replay.size",
+    "100000",
+    "--jax.platform",
+    "cuda",
+    "--jax.compute_dtype",
+    "float32",
+    "--jax.prealloc",
+    "False",
+    "--logger.outputs",
+    "jsonl",
+    "--logdir",
+    "/home/haozhe/Desktop/ece1508proj/world-model-rl/runs/haozhe_stage2/dreamerv3_size1m_r128_crafter_500k/seed2/logdir",
+    "--seed",
+    "2",
+    "--script",
+    "train_eval"
+  ],
+  "jax_version": "0.6.2"
+}

@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 .venv*/
+/venv_baseline/
+/venv_dreamer/
 
 # Training artifacts (never commit checkpoints or raw logdirs)
 runs/
@@ -12,3 +14,7 @@ runs/
 .DS_Store
 .vscode/
 .idea/
+
+# Haozhe's private experiment notes and reusable helper scripts.
+# Kept inside the working tree for local maintenance; never upload it.
+/world-model-rl-haozhe/
