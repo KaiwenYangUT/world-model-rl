@@ -5,21 +5,13 @@
 > Statuses: `todo` · `in progress` · `done` · `blocked`.
 
 ## Current status
-- **Date:** 2026-11-12
-- **Stage:** Stages 0–3 done in preliminary form on the M2 Max. All four methods ran through the pipeline, and **preliminary results exist for RQ1, RQ2, and RQ3** (see *Preliminary results* below). The week-1 gate (§6) passes for PPO and DreamerV3. Repo is on GitHub (`KaiwenYangUT/world-model-rl`).
-- **Latest result:** the CUDA DreamerV3 `size1m` ratio-128 runs finished at 250k on seeds 0–2
-  for both reward settings. At the exact 250k checkpoint, mean place-table success was
-  **13.3% training / 8.7% held-out** with standard reward and **50.0% / 46.7%** with sparse reward.
-  [Endpoint comparison CSV](results/standard_cuda_250k/dreamerv3_r128/standard_vs_sparse_250k_summary.csv)
-- **Next action:**
-  1. Read the preliminary results and decide the Stage 4 budget and settings.
-  2. ~~Run the matched standard-reward 250k comparison~~ done 2026-11-12 (T30).
-  3. T15 + T16 proper: held-out trajectories for RQ3.
-  4. ~~Step-indexed DreamerV3 checkpoints~~ done 2026-11-09 (`ckpt_every_steps` in the config; first used by the sparse ablation run).
-  5. ~~Re-time PPO/DQN/PPO-LSTM on an idle machine~~ done 2026-11-10 (T26); ~~time DreamerV3 size12m~~ done (T27: ~18 h per 100k on CPU, GPU only); ~~critic value check~~ done (T28).
-  6. Test the `repval` contribution in a separate controlled sparse-reward ratio-128 run.
-- **CUDA run status:** the 250k standard-reward batch finished at 11:31 Toronto time on 2026-11-12.
-- **Blockers:** none. Timings from before 2026-11-10 are provisional (several jobs shared the machine); the 2026-11-10 timing runs (T26, T27) and the sparse seeds 1–2 ran alone.
+- **Date:** 2026-11-18
+- **Stage:** Stage 4 started. Preliminary results exist for RQ1–RQ3. DreamerV3 `size12m` (ratio 128, standard reward) matches PPO at 500k: **93.3% / 77.0%** vs **88.0% / 75.0%** place-table success (train / held-out, intervals overlap). `size1m` stays near random at 500k (1.7% / 3.0%).
+- **Where the plan lives:** README [Problem log](README.md#problem-log) (P1–P19, each with observed → hypothesis → tried → status → alternative → new problems), [Experiment map](README.md#experiment-map) (E1–E8), [Model scope](README.md#model-scope-start-broad-then-trim) and [Plan and work split](README.md#plan-and-work-split). Every task below names its problem ID.
+- **How we work:** each person owns a set of problems end to end on their own machine (design, code, test, run, analysis, problem-log update). The split balances total effort, with Kevin taking the largest share of design and integration. Everyone is welcome to add their own ideas as new problem entries. Shared code (`rlproj/`, harness, CSV schemas) changes only through a reviewed PR. Jobs over one night on the M2 Max go to a GPU; `size12m` work goes to the fastest GPU (setup C). Each comparison stays on one setup.
+- **Next action (this week):** T33 tonight on the M2 Max (P6); T31 + T32 on setup C (P12, P7); `size12m` memory test + T35a on setup B (P2); T38 analysis (P4).
+- **Scope review:** Sun 2026-11-29 (P14, Kevin leads). Until then we keep exploring broadly. Trimming only decides report space: every result stays in the repo, and trimmed ones get 1–2 sentences in the report. Current proposal for the main figure: PPO, PPO-LSTM, DQN 3-step, DreamerV3 `size12m`.
+- **Blockers:** P12 (R13–R16 code not in git). Nothing is running.
 - **Key dates:**
   - Week-1 kill/go gate: **Wed 2026-11-11**.
   - Results frozen: **Sun 2026-12-06**.
@@ -443,9 +435,9 @@ ECE1508_RL_Project/
 | T12 | Dreamer checkpoint adapter for harness | `adapters/dreamer.py` | T06, T10 | 4–6 h | – | done (every 10k-step checkpoint for runs with `ckpt_every_steps`, else final checkpoint only; eval reproducible byte for byte) | Kevin |
 | T13 | ★ PPO-LSTM config + adapter state handling + test | LSTM run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds; recurrent-state adapter test in `tests/test_sb3_adapter.py`) | Kevin |
 | T14 | ★ DQN config (memory-safe) + 50k smoke | DQN run | T06, T07 | 0.5 day | **yes** | done (250k × 3 seeds + 3-step variant) | Kevin |
-| T15 | ★ Held-out trajectory collector | `collect_heldout.py` + npz | T12 | 3–4 h | **yes** | in progress | Haozhe |
+| T15 | ★ Held-out trajectory collector (P9) | `collect_heldout.py` + npz | T12 | 3–4 h | **yes** | in progress (no code in repo yet) | Haozhe |
 | T16 | ★ `wm_eval` patch + script + plot | `wm_error.csv`, figure | T10 (any checkpoint), T15 | 1 day | **yes** | in progress (preliminary: on replay buffers, not T15 trajectories) | Kevin |
-| T17 | ★ Demo GIF tool (incl. Dreamer imagined-vs-real) | `make_demo.py` | T06 | 4 h | **yes** | in progress | Haozhe |
+| T17 | ★ Demo GIF tool (incl. Dreamer imagined-vs-real) | `make_demo.py` | T06 | 4 h | **yes** | in progress (no code in repo yet) | Haozhe |
 | T18 | ★ TA update note (§10) | email text | T04 | 1 h | **yes** | todo | |
 | T19 | ★ README with exact reproduction commands (kept current) | `README.md` | ongoing | ongoing | **yes** | in progress (first version 2026-11-05) | Kevin |
 | T20 | Stage 4 main runs (4 methods × 3 seeds) | `results/main` | T08, T11–T14, gate | 1–2 weeks of nights | split by machine | ongoing (Haozhe completed PPO CNN 500k × 3 seeds; DreamerV3 1M ratio 128 500k × 3; DreamerV3 12M ratio 128 continued 250k→500k × 3) | Haozhe (PPO/Dreamer subset) |
@@ -459,6 +451,17 @@ ECE1508_RL_Project/
 | T28 | RQ3: critic value before table placements (`scripts/value_check.py`) | `value_check.csv`, figure | T21 | 2 h | – | done (2026-11-10; supports the repval path; firm test = repval-off run, todo) | Kevin |
 | T29 | Sparse-reward DreamerV3 size1m, ratio 128, CUDA, 250k × 3 seeds | `results/ablation_sparse_cuda_250k`, two figures | T23 | see run records | no | done (2026-11-12) | Codex (RTX 3070) |
 | T30 | Matched 250k × 3-seed standard-reward DreamerV3 run in the GPU test copy | `results/standard_cuda_250k`, two figures | T29 | see run records | no | done (2026-11-12) | Codex (RTX 3070) |
+| T31 | P12: commit the `size12m` resume launcher + figure/summary scripts, with a resume test | code in `scripts/`, `plots/` | – | 2–3 h | yes | todo | Haozhe |
+| T32 | P7: `size12m` from scratch to 500k, seed 0, vs R14 seed 0; confirm R13 seed 2; one CUDA lock + `compute_dtype` in configs | run + comparison | T31 | ~4.5 h GPU (guess) | yes | todo | Haozhe (C) |
+| T33 | P6: PPO-LSTM, DQN and DQN 3-step to 500k × 3 seeds | 500k rows for E1 | – | ~4 h with eval (M2 Max) | yes | todo | Kevin (A) |
+| T34 | P8: `size12m` sparse reward, 500k × 3 seeds | E5 at the main model size | T31 | ~13 h GPU (guess) | yes | todo | Haozhe (C) |
+| T35 | P2: `repval`-off sparse runs. T35a `size1m` 250k × 3 vs R12 (same setup B); T35b `size12m` after T34 | E8 | T34 for T35b | 3.5 h (B) / 4.5 h per seed (C) | yes | todo | Xi (T35a), Haozhe (T35b) |
+| T36 | P10: per-seed curves + full-run AUC for every run in `plots/` | figures, tables | – | 0.5 day | yes | todo | Xi |
+| T37 | P11, P5: compute-cost table, all four methods, 50k steps each, one machine (setup B); `size12m` 8 GB memory test first | `results/timing/` GPU table | – | ~1 h GPU | yes | todo | Xi (B) |
+| T38 | P4: success at each tech-tree step for every method, from existing `eval_episodes.csv` | figure | – | 2 h, no compute | yes | todo | Kevin |
+| T39 | P3: number of training worlds (1/10/50/500). Kevin: `train_pool` key (PR) + PPO × 3 seeds on A. T39b: DreamerV3 on B if `size12m` fits, else C | E6 figure | – | ~3 h (A); 1–2 nights GPU | yes | todo | Kevin (PPO), Xi or Haozhe (T39b) |
+| T40 | P5: PPO given the same wall-clock time as `size12m` | RQ1 figure | T37 | a few GPU hours | yes | todo | Xi (B) |
+| T41 | P1 (optional): `size25m`, 250k, 1 seed, only if the Nov 29 review keeps it | E4 third point | T31 | ~5 h GPU (guess) | yes | todo | Haozhe (C) |
 
 **Suggested split:**
 - **Critical path:** T00–T08 and T10–T11 on the M2 Max.
@@ -494,6 +497,24 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-18 (evening) — problem log, experiment map, scope and per-person plan — MacBook Pro M2 Max
+- **Completed:** reorganized the README into an experiment map (E1–E8: method, budget, train ratio, model size, reward, number of training worlds, world-model horizon, `repval`) and a problem log (P1–P19). Each problem records observed → why it matters → hypothesis → what was tried (run IDs and results) → status → alternative if it fails → new problems raised, and every task names its problem ID. Added a model-scope rule and a plan per person and machine with an effort-balance table. Each person now owns their problems end to end, including code and analysis. Shared-code changes go through a reviewed PR.
+- **Tasks:** T31–T40 renamed to the new problem IDs; T35 split into T35a (setup B) and T35b (setup C); T36 moved to Xi to balance effort; T41 (`size25m`, optional) added.
+- **Scope rule:** keep exploring broadly until the Nov 29 review. Trimming only decides report space (1–2 sentences instead of a figure). Every result stays in the repo.
+- **Next:** share the plan with Haozhe and Xi; start T33 tonight.
+- **Note:** the problem numbers (P1–P10) in the two earlier 2026-11-18 entries come from the first draft. The current IDs are in the README problem log.
+
+### 2026-11-18 (later) — README restructured by experiment — MacBook Pro M2 Max
+- **Completed:** rewrote the README around one shared protocol, a run inventory (setups A/B/C, runs R1–R16 with steps, seeds, precision, train time, config and results path), one main table and one ablation table pooled the same way (last 2 checkpoints × 3 seeds, Wilson CI), an "Unfinished or to confirm" list, P1–P10, and a per-machine job queue. Removed the per-person README section; its content is in the inventory and setup sections.
+- **Measurements (recomputed from the eval CSVs):** PPO at 250k: 62.0% / 52.0% on setup A vs 58.3% / 54.7% on setup C (intervals overlap). DreamerV3 `size1m` at 250k: 13.0% / 10.3% on B vs 0.3% / 1.7% on C (one B seed at 40%; JAX and dtype also differ). R11/R12 pooled: 13.0% / 10.3% standard, 42.7% / 38.3% sparse (earlier tables used the 250k checkpoint alone).
+- **Next:** agree the split with Haozhe and Xi; write configs + launch scripts for T32–T35/T37 and CPU-smoke-test them; start T33 tonight.
+
+### 2026-11-18 — review of teammates' CUDA runs and plan — MacBook Pro M2 Max
+- **Completed:** pulled `993cab8` (Xi: `size1m` ratio 128, 250k × 3 seeds, standard and sparse, RTX 3070) and `d0541a9` (Haozhe: PPO 500k, `size1m` 500k, `size12m` 250k → 500k resumed, 3 seeds each). Checked configs, `meta.json` and the eval CSVs. Wrote the problem list (P1–P10), extensions and work split into the README and added T31–T40.
+- **Measurements (from their records):** final train / held-out place-table success: PPO 88.0% / 75.0%, `size12m` 93.3% / 77.0%, `size1m` 1.7% / 3.0% (500k, pooled 490k + 500k, n=300). `make_wood_pickaxe`: `size12m` 51.0% / 46.3% vs PPO 41.3% / 39.0%. Training time on Haozhe's GPU: `size12m` 2.2 h per 250k, `size1m` 1.1 h per 500k, PPO 0.05 h per 500k. `size12m` seed 2 drops to 10% at 320k and is back to 82% at 330k.
+- **Issues:** resume launcher and figure scripts are not committed (`git.dirty = true` in every CUDA `meta.json`); 12M 500k is a resumed run; the CUDA setups differ (JAX 0.4.33 + bf16 vs 0.6.2 + fp32); DQN/PPO-LSTM still at 250k; RQ3 still on replay memory.
+- **Next:** T31 (commit launcher), T33 tonight on the M2 Max, T32/T34 on GPU, T15/T16.
 
 ### 2026-11-12 21:26 EST — Haozhe — Linux
 - **Completed:** Set up and validated the two CUDA environments. Stage 1 completed DreamerV3 12M with the standard reward for 250k steps on seeds 0/1/2. Stage 2 completed PPO 500k and DreamerV3 1M 500k from scratch, and continued DreamerV3 12M from about 250k to a global 500k. Shared evaluation, replay-based world-model diagnostics, summaries, and eight final figures are complete. Final train / held-out `place_table` success is PPO 88.0% / 75.0%, DreamerV3 1M 1.7% / 3.0%, and DreamerV3 12M 93.3% / 77.0%. Results are stored in `results/haozhe_stage1/` and `results/haozhe_stage2/`; final figures are stored in `figures/haozhe_stage2_crafter_standard_reward_500k/`.
