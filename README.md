@@ -179,39 +179,28 @@ first table, so the ablation changes both the reward and when episodes end.
 - **Against published work:** our PPO at 1M, scored the way the Crafter paper scores it, gets 86% /
   73% / 40% on collect wood / place table / make wood pickaxe vs. the paper's 83% / 66% / 21%.
 
-![Learning curves at 500k: PPO and DreamerV3 on training and unseen worlds](figures/haozhe_stage2_crafter_standard_reward_500k/02_learning_curves_train_heldout.png)
+### Key figures
+The most recent results for each model, side by side. Other figures are in `figures/`.
 
-### All figures
-Every figure in `figures/`, grouped by the runs it shows. "Made by" credits whoever produced it.
+**1. All methods at 250k, plus DreamerV3 `size1m` at train ratios 32 / 64 / 128 (100k).** PPO
+leads, PPO-LSTM and DQN 3-step follow, plain DQN is unreliable, and `size1m` stays near random.
+![All methods at 250k, training worlds](figures/main_learning_curves.png)
 
-**500k, standard reward: PPO, DreamerV3 `size1m` and `size12m` (R14–R16, setup C), made by Haozhe**
-| Figure | What it shows |
-|---|---|
-| [01 Learning curves, training worlds](figures/haozhe_stage2_crafter_standard_reward_500k/01_learning_curves_train.png) | Table, wood, wood pickaxe and return vs. steps. `size12m`'s wood-pickaxe success climbs steeply after ~400k (to ~55%), while PPO's rises steadily to ~43%. |
-| [02 Learning curves, training + unseen worlds](figures/haozhe_stage2_crafter_standard_reward_500k/02_learning_curves_train_heldout.png) | The same curves with the unseen worlds dashed (shown above). |
-| [03 Generalization](figures/haozhe_stage2_crafter_standard_reward_500k/03_generalization.png) | Final success per seed on both world sets: gaps of +13.0 (PPO), −1.3 (`size1m`) and +16.3 points (`size12m`). |
-| [04 World-model error, `size1m`](figures/haozhe_stage2_crafter_standard_reward_500k/04_world_model_error_dreamer_1m.png) | Reward error, reward recall and continuation error vs. imagination horizon for R15. |
-| [05 World-model error, `size12m`](figures/haozhe_stage2_crafter_standard_reward_500k/05_world_model_error_dreamer_12m.png) | The same for R14. Recall falls from 0.93 on real frames to ~0.3–0.65 when imagining ahead, and every error is larger on the evaluation replay than on the training replay. |
-| [06 Success by seed, 0–500k](figures/haozhe_stage2_crafter_standard_reward_500k/06_success_by_seed.png) | Every seed separately. `size12m` seed 2 drops to 10% at 320k and recovers. `size1m` seed 2 reaches 48% at ~440k and then loses it, so the small model can find the table but does not keep it ([P10](#p10)). |
-| [07 Training losses](figures/haozhe_stage2_crafter_standard_reward_500k/07_training_losses.png) | `size12m` has lower image, reward and continuation losses throughout. The dynamics loss rises during training for both sizes, more for `size12m` (not yet explained). |
-| [08 World model, `size1m` vs `size12m`](figures/haozhe_stage2_crafter_standard_reward_500k/08_world_model_comparison.png) | 04 and 05 overlaid: `size12m` catches more rewards at every horizon. |
+**2. PPO vs DreamerV3 `size1m` vs `size12m` at 500k, training worlds (solid) and unseen worlds
+(dashed).** `size12m` catches PPO by ~250k and leads at 500k. `size1m` does not learn the table.
+![PPO and DreamerV3 at 500k, training and unseen worlds](figures/haozhe_stage2_crafter_standard_reward_500k/02_learning_curves_train_heldout.png)
 
-**250k, DreamerV3 `size1m`, standard and sparse reward (R11–R12, setup B), made by Xi**
-| Figure | What it shows |
-|---|---|
-| [Sparse reward, 3 seeds](figures/ablation_sparse_cuda_250k_dreamerv3_r128_place_table_3seeds.png) | Learning curves on both world sets. All 3 seeds learn the table, with large differences between seeds. |
-| [Sparse DreamerV3 vs sparse PPO](figures/ablation_sparse_cuda_250k_ppo_comparison.png) | Same reward and evaluation worlds: PPO reaches ~97% / 82%, DreamerV3 `size1m` ~50% / 47% at 250k. |
-| [Standard reward, 3 seeds](figures/standard_cuda_250k_dreamerv3_r128_place_table_3seeds.png) | Only seed 1 learns the table (40% at 250k). |
-| [Standard vs sparse](figures/standard_vs_sparse_cuda_250k_place_table.png) | The two reward settings side by side. |
+**3. Generalization at 500k.** Final success per seed on both world sets. The gap is +13 points
+for PPO and +16 for `size12m`.
+![Generalization at 500k](figures/haozhe_stage2_crafter_standard_reward_500k/03_generalization.png)
 
-**100k–250k, all methods and the first DreamerV3 runs (R1–R10, setup A), made by Kevin**
-| Figure | What it shows |
-|---|---|
-| [Learning curves](figures/main_learning_curves.png) and [with unseen worlds](figures/main_learning_curves_train_heldout.png) | PPO, PPO-LSTM, DQN and DQN 3-step to 250k, plus the first DreamerV3 `size1m` runs (100k). The train–unseen gap opens after ~100k. |
-| [Generalization](figures/main_generalization.png) | Final success on both world sets for every method at 250k. |
-| [Reward ablation, PPO](figures/ablation_sparse_ppo_cnn.png) and [DreamerV3](figures/ablation_sparse_dreamerv3_r128.png) | Standard vs sparse reward. Sparse DreamerV3 learns only from ~80–90k. |
-| World-model error: [ratio 32](figures/main_wm_error.png), [ratio 64](figures/main_wm_error_dreamerv3_r64.png), [ratio 128](figures/main_wm_error_dreamerv3_r128.png), [sparse](figures/ablation_sparse_wm_error_dreamerv3_r128.png) | Reward recall rises with the train ratio (0 → 5% → 30% on real frames). With the sparse reward, the table reward is almost never predicted. |
-| [Value check](figures/ablation_sparse_value_check_dreamerv3_r128.png) | The value network rates table-placing games and holding wood higher at 100k (evidence for [P2](#p2)). |
+**4. Reward ablation for DreamerV3 `size1m` at 250k.** Rewarding only the table helps the small model
+(43% vs 13% on training worlds).
+![Standard vs sparse reward, DreamerV3 size1m at 250k](figures/standard_vs_sparse_cuda_250k_place_table.png)
+
+**5. World model, `size1m` vs `size12m`.** Reward-prediction error vs. how far ahead the model
+imagines. `size12m` catches more achievement rewards at every horizon.
+![World-model error, size1m vs size12m](figures/haozhe_stage2_crafter_standard_reward_500k/08_world_model_comparison.png)
 
 ## Problem log
 This log is the chain of reasoning behind every run. Each problem gets an ID that does not change.
@@ -393,7 +382,7 @@ choice we made, not something to measure) · **closed** (answered; new runs are 
   - `size1m` with the standard reward learns on 1 of 6 seeds (R11, R15).
   - R14's AUC (80.9%) and "steps to 50%" (250k) cover only 247k–500k, so they cannot be compared
     with the other runs.
-- **Already there:** Haozhe's [success-by-seed figure](figures/haozhe_stage2_crafter_standard_reward_500k/06_success_by_seed.png)
+- **Already there:** the [success-by-seed figure](figures/haozhe_stage2_crafter_standard_reward_500k/06_success_by_seed.png)
   shows every seed of R14–R16 over 0–500k.
 - **Next:** T36 (Xi): the same per-seed view for every other run, plus an AUC over the full 0–500k
   curve (R14's must include R13's 0–250k part).

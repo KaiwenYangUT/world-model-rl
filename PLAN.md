@@ -498,8 +498,8 @@ Newest entry first. Template:
 - Next: ...
 ```
 
-### 2026-11-18 (night) — figure gallery, no per-task dates — MacBook Pro M2 Max
-- **Completed:** README now lists every figure in `figures/` with what it shows and who made it: Haozhe's eight 500k figures, Xi's four 250k CUDA figures and Kevin's figures from setup A. Removed the per-task dates from the work split; tasks now say when they can start (now, or after which task). Timing is up to each owner. The scope review on Nov 29 is the only date in the plan. Removed the results-freeze sentence from the README status line; it stays in the key dates above.
+### 2026-11-18 (night) — key figures, no per-task dates — MacBook Pro M2 Max
+- **Completed:** README has a short "Key figures" section with the most recent comparison for each model: all methods at 250k, PPO vs DreamerV3 `size1m` / `size12m` at 500k, generalization at 500k, the `size1m` reward ablation, and world-model error by size. Other figures stay in `figures/`. Removed the per-task dates from the work split; tasks now say when they can start (now, or after which task). Timing is up to each owner. The scope review on Nov 29 is the only date in the plan. Removed the results-freeze sentence from the README status line; it stays in the key dates above.
 - **Observations from Haozhe's figures:** `size1m` seed 2 reaches 48% at ~440k and then loses it. The dynamics loss rises during training for both sizes, more for `size12m` (not yet explained). Per-seed curves for R14–R16 already exist (figure 06), so T36 covers the other runs and the full-run AUC.
 
 ### 2026-11-18 (evening) — problem log, experiment map, scope and per-person plan — MacBook Pro M2 Max
