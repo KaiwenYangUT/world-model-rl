@@ -9,7 +9,7 @@
 - **Stage:** Stage 4 started. Preliminary results exist for RQ1–RQ3. DreamerV3 `size12m` (ratio 128, standard reward) matches PPO at 500k: **93.3% / 77.0%** vs **88.0% / 75.0%** place-table success (train / held-out, intervals overlap). `size1m` stays near random at 500k (1.7% / 3.0%).
 - **Where the plan lives:** README [Problem log](README.md#problem-log) (P1–P19, each with observed → hypothesis → tried → status → alternative → new problems), [Experiment map](README.md#experiment-map) (E1–E8), [Model scope](README.md#model-scope-start-broad-then-trim) and [Plan and work split](README.md#plan-and-work-split). Every task below names its problem ID.
 - **How we work:** each person owns a set of problems end to end on their own machine (design, code, test, run, analysis, problem-log update). The split balances total effort, with Kevin taking the largest share of design and integration. Everyone is welcome to add their own ideas as new problem entries. Shared code (`rlproj/`, harness, CSV schemas) changes only through a reviewed PR. Jobs over one night on the M2 Max go to a GPU; `size12m` work goes to the fastest GPU (setup C). Each comparison stays on one setup.
-- **Next action (this week):** T33 tonight on the M2 Max (P6); T31 + T32 on setup C (P12, P7); `size12m` memory test + T35a on setup B (P2); T38 analysis (P4).
+- **Next actions (each owner runs them when available; earlier is better):** T33 on the M2 Max (P6); T31 + T32 on setup C (P12, P7); `size12m` memory test + T35a on setup B (P2); T38 analysis (P4).
 - **Scope review:** Sun 2026-11-29 (P14, Kevin leads). Until then we keep exploring broadly. Trimming only decides report space: every result stays in the repo, and trimmed ones get 1–2 sentences in the report. Current proposal for the main figure: PPO, PPO-LSTM, DQN 3-step, DreamerV3 `size12m`.
 - **Blockers:** P12 (R13–R16 code not in git). Nothing is running.
 - **Key dates:**
@@ -452,9 +452,9 @@ ECE1508_RL_Project/
 | T29 | Sparse-reward DreamerV3 size1m, ratio 128, CUDA, 250k × 3 seeds | `results/ablation_sparse_cuda_250k`, two figures | T23 | see run records | no | done (2026-11-12) | Codex (RTX 3070) |
 | T30 | Matched 250k × 3-seed standard-reward DreamerV3 run in the GPU test copy | `results/standard_cuda_250k`, two figures | T29 | see run records | no | done (2026-11-12) | Codex (RTX 3070) |
 | T31 | P12: commit the `size12m` resume launcher + figure/summary scripts, with a resume test | code in `scripts/`, `plots/` | – | 2–3 h | yes | todo | Haozhe |
-| T32 | P7: `size12m` from scratch to 500k, seed 0, vs R14 seed 0; confirm R13 seed 2; one CUDA lock + `compute_dtype` in configs | run + comparison | T31 | ~4.5 h GPU (guess) | yes | todo | Haozhe (C) |
+| T32 | P7: `size12m` from scratch to 500k, seed 0, vs R14 seed 0; confirm R13 seed 2; one CUDA lock + `compute_dtype` in configs | run + comparison | – | ~4.5 h GPU (guess) | yes | todo | Haozhe (C) |
 | T33 | P6: PPO-LSTM, DQN and DQN 3-step to 500k × 3 seeds | 500k rows for E1 | – | ~4 h with eval (M2 Max) | yes | todo | Kevin (A) |
-| T34 | P8: `size12m` sparse reward, 500k × 3 seeds | E5 at the main model size | T31 | ~13 h GPU (guess) | yes | todo | Haozhe (C) |
+| T34 | P8: `size12m` sparse reward, 500k × 3 seeds | E5 at the main model size | – | ~13 h GPU (guess) | yes | todo | Haozhe (C) |
 | T35 | P2: `repval`-off sparse runs. T35a `size1m` 250k × 3 vs R12 (same setup B); T35b `size12m` after T34 | E8 | T34 for T35b | 3.5 h (B) / 4.5 h per seed (C) | yes | todo | Xi (T35a), Haozhe (T35b) |
 | T36 | P10: per-seed curves + full-run AUC for every run in `plots/` | figures, tables | – | 0.5 day | yes | todo | Xi |
 | T37 | P11, P5: compute-cost table, all four methods, 50k steps each, one machine (setup B); `size12m` 8 GB memory test first | `results/timing/` GPU table | – | ~1 h GPU | yes | todo | Xi (B) |
@@ -497,6 +497,10 @@ Newest entry first. Template:
 - Issues / blockers: ...
 - Next: ...
 ```
+
+### 2026-11-18 (night) — figure gallery, no per-task dates — MacBook Pro M2 Max
+- **Completed:** README now lists every figure in `figures/` with what it shows and who made it: Haozhe's eight 500k figures, Xi's four 250k CUDA figures and Kevin's figures from setup A. Removed the per-task dates from the work split; tasks now say when they can start (now, or after which task). Timing is up to each owner. The scope review on Nov 29 is the only date in the plan. Removed the results-freeze sentence from the README status line; it stays in the key dates above.
+- **Observations from Haozhe's figures:** `size1m` seed 2 reaches 48% at ~440k and then loses it. The dynamics loss rises during training for both sizes, more for `size12m` (not yet explained). Per-seed curves for R14–R16 already exist (figure 06), so T36 covers the other runs and the full-run AUC.
 
 ### 2026-11-18 (evening) — problem log, experiment map, scope and per-person plan — MacBook Pro M2 Max
 - **Completed:** reorganized the README into an experiment map (E1–E8: method, budget, train ratio, model size, reward, number of training worlds, world-model horizon, `repval`) and a problem log (P1–P19). Each problem records observed → why it matters → hypothesis → what was tried (run IDs and results) → status → alternative if it fails → new problems raised, and every task names its problem ID. Added a model-scope rule and a plan per person and machine with an effort-balance table. Each person now owns their problems end to end, including code and analysis. Shared-code changes go through a reviewed PR.

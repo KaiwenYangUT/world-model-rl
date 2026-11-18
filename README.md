@@ -7,7 +7,7 @@ the world, under the same budget of game steps and the same evaluation code.
 **Status (2026-11-18):** preliminary results exist for all three research questions. At 500k
 steps DreamerV3 `size12m` matches PPO (93% vs 88% on training worlds, 77% vs 75% on unseen
 worlds; the intervals overlap). DQN 3-step and PPO-LSTM have only been run to 250k so far.
-**Results freeze on Sun Dec 6.** Full plan, decisions and run log: [PLAN.md](PLAN.md).
+Full plan, decisions and run log: [PLAN.md](PLAN.md).
 
 **Contents:**
 1. [Research questions](#research-questions)
@@ -181,14 +181,37 @@ first table, so the ablation changes both the reward and when episodes end.
 
 ![Learning curves at 500k: PPO and DreamerV3 on training and unseen worlds](figures/haozhe_stage2_crafter_standard_reward_500k/02_learning_curves_train_heldout.png)
 
-More figures:
-- 250k, setup A: [learning curves](figures/main_learning_curves.png),
-  [generalization](figures/main_generalization.png), [world-model error](figures/main_wm_error.png).
-- Reward ablation: [PPO](figures/ablation_sparse_ppo_cnn.png),
-  [DreamerV3 100k](figures/ablation_sparse_dreamerv3_r128.png),
-  [DreamerV3 250k, standard vs sparse](figures/standard_vs_sparse_cuda_250k_place_table.png),
-  [sparse DreamerV3 vs PPO](figures/ablation_sparse_cuda_250k_ppo_comparison.png).
-- 500k: [all eight figures](figures/haozhe_stage2_crafter_standard_reward_500k/).
+### All figures
+Every figure in `figures/`, grouped by the runs it shows. "Made by" credits whoever produced it.
+
+**500k, standard reward: PPO, DreamerV3 `size1m` and `size12m` (R14–R16, setup C), made by Haozhe**
+| Figure | What it shows |
+|---|---|
+| [01 Learning curves, training worlds](figures/haozhe_stage2_crafter_standard_reward_500k/01_learning_curves_train.png) | Table, wood, wood pickaxe and return vs. steps. `size12m`'s wood-pickaxe success climbs steeply after ~400k (to ~55%), while PPO's rises steadily to ~43%. |
+| [02 Learning curves, training + unseen worlds](figures/haozhe_stage2_crafter_standard_reward_500k/02_learning_curves_train_heldout.png) | The same curves with the unseen worlds dashed (shown above). |
+| [03 Generalization](figures/haozhe_stage2_crafter_standard_reward_500k/03_generalization.png) | Final success per seed on both world sets: gaps of +13.0 (PPO), −1.3 (`size1m`) and +16.3 points (`size12m`). |
+| [04 World-model error, `size1m`](figures/haozhe_stage2_crafter_standard_reward_500k/04_world_model_error_dreamer_1m.png) | Reward error, reward recall and continuation error vs. imagination horizon for R15. |
+| [05 World-model error, `size12m`](figures/haozhe_stage2_crafter_standard_reward_500k/05_world_model_error_dreamer_12m.png) | The same for R14. Recall falls from 0.93 on real frames to ~0.3–0.65 when imagining ahead, and every error is larger on the evaluation replay than on the training replay. |
+| [06 Success by seed, 0–500k](figures/haozhe_stage2_crafter_standard_reward_500k/06_success_by_seed.png) | Every seed separately. `size12m` seed 2 drops to 10% at 320k and recovers. `size1m` seed 2 reaches 48% at ~440k and then loses it, so the small model can find the table but does not keep it ([P10](#p10)). |
+| [07 Training losses](figures/haozhe_stage2_crafter_standard_reward_500k/07_training_losses.png) | `size12m` has lower image, reward and continuation losses throughout. The dynamics loss rises during training for both sizes, more for `size12m` (not yet explained). |
+| [08 World model, `size1m` vs `size12m`](figures/haozhe_stage2_crafter_standard_reward_500k/08_world_model_comparison.png) | 04 and 05 overlaid: `size12m` catches more rewards at every horizon. |
+
+**250k, DreamerV3 `size1m`, standard and sparse reward (R11–R12, setup B), made by Xi**
+| Figure | What it shows |
+|---|---|
+| [Sparse reward, 3 seeds](figures/ablation_sparse_cuda_250k_dreamerv3_r128_place_table_3seeds.png) | Learning curves on both world sets. All 3 seeds learn the table, with large differences between seeds. |
+| [Sparse DreamerV3 vs sparse PPO](figures/ablation_sparse_cuda_250k_ppo_comparison.png) | Same reward and evaluation worlds: PPO reaches ~97% / 82%, DreamerV3 `size1m` ~50% / 47% at 250k. |
+| [Standard reward, 3 seeds](figures/standard_cuda_250k_dreamerv3_r128_place_table_3seeds.png) | Only seed 1 learns the table (40% at 250k). |
+| [Standard vs sparse](figures/standard_vs_sparse_cuda_250k_place_table.png) | The two reward settings side by side. |
+
+**100k–250k, all methods and the first DreamerV3 runs (R1–R10, setup A), made by Kevin**
+| Figure | What it shows |
+|---|---|
+| [Learning curves](figures/main_learning_curves.png) and [with unseen worlds](figures/main_learning_curves_train_heldout.png) | PPO, PPO-LSTM, DQN and DQN 3-step to 250k, plus the first DreamerV3 `size1m` runs (100k). The train–unseen gap opens after ~100k. |
+| [Generalization](figures/main_generalization.png) | Final success on both world sets for every method at 250k. |
+| [Reward ablation, PPO](figures/ablation_sparse_ppo_cnn.png) and [DreamerV3](figures/ablation_sparse_dreamerv3_r128.png) | Standard vs sparse reward. Sparse DreamerV3 learns only from ~80–90k. |
+| World-model error: [ratio 32](figures/main_wm_error.png), [ratio 64](figures/main_wm_error_dreamerv3_r64.png), [ratio 128](figures/main_wm_error_dreamerv3_r128.png), [sparse](figures/ablation_sparse_wm_error_dreamerv3_r128.png) | Reward recall rises with the train ratio (0 → 5% → 30% on real frames). With the sparse reward, the table reward is almost never predicted. |
+| [Value check](figures/ablation_sparse_value_check_dreamerv3_r128.png) | The value network rates table-placing games and holding wood higher at 100k (evidence for [P2](#p2)). |
 
 ## Problem log
 This log is the chain of reasoning behind every run. Each problem gets an ID that does not change.
@@ -221,7 +244,7 @@ choice we made, not something to measure) · **closed** (answered; new runs are 
 | [P10](#p10) | Seed variance is hidden by the "final" number | validity | open | T36 (Xi) |
 | [P11](#p11) | Times from different machines are not comparable | validity | open | T37 (Xi) |
 | [P12](#p12) | Code behind R13–R16 is not in git | practical | open | T31 (Haozhe) |
-| [P13](#p13) | Result folders and summaries are inconsistent | practical | open | each owner, by Nov 29 |
+| [P13](#p13) | Result folders and summaries are inconsistent | practical | open | each owner |
 | [P14](#p14) | Which results get space in the final report | scope | **decision** | review Nov 29 (Kevin leads) |
 | [P15](#p15) | Crafter was not reproducible | practical | solved | – |
 | [P16](#p16) | World generation was the bottleneck | practical | solved | – |
@@ -251,7 +274,7 @@ choice we made, not something to measure) · **closed** (answered; new runs are 
   ("too small to learn the target"). More runs of it are low priority.
 - **New problems raised:** [P7](#p7) (R14 was resumed), [P8](#p8) (ablation at `size12m`),
   [P2](#p2) (how the sparse reward reached the policy).
-- **Optional next step:** a `size25m` point (T41) for a three-point size curve, after the Nov 29
+- **Optional next step:** a `size25m` point (T41) for a three-point size curve, after the scope
   review.
 
 <a id="p2"></a>
@@ -370,7 +393,10 @@ choice we made, not something to measure) · **closed** (answered; new runs are 
   - `size1m` with the standard reward learns on 1 of 6 seeds (R11, R15).
   - R14's AUC (80.9%) and "steps to 50%" (250k) cover only 247k–500k, so they cannot be compared
     with the other runs.
-- **Next:** T36 (Xi): per-seed curves and an AUC over the full 0–500k curve for every run.
+- **Already there:** Haozhe's [success-by-seed figure](figures/haozhe_stage2_crafter_standard_reward_500k/06_success_by_seed.png)
+  shows every seed of R14–R16 over 0–500k.
+- **Next:** T36 (Xi): the same per-seed view for every other run, plus an AUC over the full 0–500k
+  curve (R14's must include R13's 0–250k part).
 
 <a id="p11"></a>
 #### P11. Times from different machines are not comparable · open
@@ -391,7 +417,7 @@ choice we made, not something to measure) · **closed** (answered; new runs are 
 - **Observed:** some results and figures sit in folders named after people (`haozhe_stage1/2`),
   one summary is in Chinese, and the venv names differ from the project convention (`.venv-*`).
 - **Next:** each owner moves their own results to experiment names (for example
-  `results/main_500k/`) and writes the summary in English, by Nov 29.
+  `results/main_500k/`) and writes the summary in English.
 
 <a id="p14"></a>
 #### P14. Which results get space in the final report · decision
@@ -445,13 +471,17 @@ space in the main figure if it (a) is the best of its family, or (b) answers a q
 result answers. Everything else moves to the supporting results, but stays in the repository.
 
 ## Plan and work split
-### Timeline
-| Dates | Goal | Problems |
+### Order of work
+When each task runs is up to its owner's availability. The earlier the better, since we are still
+developing and each result can change what comes next. The machine times below are estimates to
+help with planning, not deadlines.
+
+| Phase | Goal | Problems |
 |---|---|---|
-| Wed Nov 18 – Sun Nov 22 | Fix the validity problems that block the main table | P6, P7, P12, start P8; P4 (analysis only) |
-| Mon Nov 23 – Sun Nov 29 | Mechanism and new axes | P2, P3, P9, P10, P11; **scope review Nov 29** (P14) |
-| Mon Nov 30 – Sun Dec 6 | Remaining runs; **results freeze Dec 6** | whatever is still open |
-| Dec 13–18 | Final code and report | – |
+| 1 | Fix the validity problems that block the main table | P6, P7, P12, start P8; P4 (analysis only) |
+| 2 | Mechanism and new axes | P2, P3, P9, P10, P11 |
+| – | **Scope review on Nov 29** (decides report space only) | P14 |
+| 3 | Whatever is still open, plus anything the review adds | – |
 
 ### How each person works
 - **Ownership:** each person owns a set of problems from start to finish. That covers design, code
@@ -484,29 +514,29 @@ Machine hours are estimates scaled from measured times.
   takes ~4.6 h per 100k steps, and `size12m` is not practical (~18 h per 100k).
 - **Focus:** model-free baselines, analysis that needs no GPU, shared tooling, and integration.
 
-| Task | Problem | Job | Machine time | When |
+| Task | Problem | Job | Machine time | Can start |
 |---|---|---|---|---|
-| T33 | P6 | PPO-LSTM, DQN and DQN 3-step to 500k × 3 seeds | ~4 h with eval | Nov 18–19 |
-| T38 | P4 | Tech-tree depth analysis from existing episode data | none | Nov 19–20 |
-| T39 | P3 | Design the number-of-worlds experiment; `train_pool` config key (PR); PPO on 1 / 10 / 50 / 500 worlds × 3 seeds | ~3 h | Nov 21–25 |
+| T33 | P6 | PPO-LSTM, DQN and DQN 3-step to 500k × 3 seeds | ~4 h with eval | now |
+| T38 | P4 | Tech-tree depth analysis from existing episode data | none | now |
+| T39 | P3 | Design the number-of-worlds experiment; `train_pool` config key (PR); PPO on 1 / 10 / 50 / 500 worlds × 3 seeds | ~3 h | now |
 | T16 | P9 | `wm_eval` on unseen-world games with per-achievement recall; tested on `size1m` checkpoints | ~1 h | after T15 |
-| T22 | – | Report skeleton; each owner fills in their own section | none | by Nov 29 |
-| – | P14 | Prepare and lead the Nov 29 review | none | Nov 29 |
+| T22 | – | Report skeleton; each owner fills in their own section | none | now |
+| – | P14 | Prepare and lead the scope review | none | Nov 29 |
 
 ### Haozhe, setup C (fastest GPU)
 - **Machine:** `size12m` trains 250k steps in ~2.2 h and PPO 500k in ~3 min.
 - **Focus:** everything at `size12m`, the main DreamerV3 model.
 
-| Task | Problem | Job | Machine time (estimate) | When |
+| Task | Problem | Job | Machine time (estimate) | Can start |
 |---|---|---|---|---|
 | T31 | P12 | Commit the resume launcher and the figure and summary scripts, with a resume test | – | first |
-| T32 | P7 | `size12m` from scratch to 500k, seed 0; compare with R14 seed 0; confirm R13 seed 2 | ~4.5 h | Nov 19–20 |
-| T34 | P8 | `size12m` sparse reward, 500k × 3 seeds | ~13 h | Nov 20–22 |
-| T35b | P2 | `size12m` sparse with `repval` off (after T34 shows it learns) | ~4.5 h per seed | Nov 23–29 |
-| T15 | P9 | Collect unseen-world games with the final `size12m` policy | ~1 h | Nov 23–29 |
-| T17 | – | Demo GIFs, including DreamerV3's imagined vs. real frames | – | by Dec 6 |
-| T41 | P1 | Optional: `size25m`, 250k, 1 seed | ~5 h (guess) | after the Nov 29 review |
-| – | P13 | Move own results to experiment names, English summaries | – | by Nov 29 |
+| T32 | P7 | `size12m` from scratch to 500k, seed 0; compare with R14 seed 0; confirm R13 seed 2 | ~4.5 h | now |
+| T34 | P8 | `size12m` sparse reward, 500k × 3 seeds | ~13 h | now |
+| T35b | P2 | `size12m` sparse with `repval` off (after T34 shows it learns) | ~4.5 h per seed | after T34 |
+| T15 | P9 | Collect unseen-world games with the final `size12m` policy | ~1 h | now |
+| T17 | – | Demo GIFs, including DreamerV3's imagined vs. real frames | – | now |
+| T41 | P1 | Optional: `size25m`, 250k, 1 seed | ~5 h (guess) | after the scope review |
+| – | P13 | Move own results to experiment names, English summaries | – | now |
 
 ### Xi, setup B (RTX 3070, 8 GB)
 - **Machine:** `size1m` trains 250k steps in ~0.8 h. Whether `size12m` fits in 8 GB is unknown:
@@ -514,14 +544,14 @@ Machine hours are estimates scaled from measured times.
 - **Focus:** how the reward reaches DreamerV3's policy (P2), compute cost (P5, P11), seed
   variance (P10), and the DreamerV3 side of the number-of-worlds experiment if `size12m` fits.
 
-| Task | Problem | Job | Machine time (estimate) | When |
+| Task | Problem | Job | Machine time (estimate) | Can start |
 |---|---|---|---|---|
 | – | – | 10-minute test: does `size12m` fit in 8 GB? | 10 min | first |
-| T35a | P2 | `size1m`, sparse, `repval` off, 250k × 3 seeds; compare with R12 (same setup) | ~3.5 h with eval | Nov 19–20 |
-| T37 | P11, P5 | Compute-cost table: all four methods, 50k steps each, on setup B | ~1 h | Nov 21–22 |
-| T36 | P10 | Per-seed curves and full-run AUC for every run in `plots/` | none | Nov 21–24 |
-| T40 | P5 | PPO given the same wall-clock time as `size12m` | a few hours | Nov 23–29 |
-| T39b | P3 | DreamerV3 on 1 / 10 / 50 / 500 worlds, using Kevin's `train_pool` key (`size12m` if it fits, else Haozhe runs it) | 1–2 nights | Nov 26 – Dec 2 |
+| T35a | P2 | `size1m`, sparse, `repval` off, 250k × 3 seeds; compare with R12 (same setup) | ~3.5 h with eval | now |
+| T37 | P11, P5 | Compute-cost table: all four methods, 50k steps each, on setup B | ~1 h | now |
+| T36 | P10 | Per-seed curves and full-run AUC for every run in `plots/` | none | now |
+| T40 | P5 | PPO given the same wall-clock time as `size12m` | a few hours | after T37 |
+| T39b | P3 | DreamerV3 on 1 / 10 / 50 / 500 worlds, using Kevin's `train_pool` key (`size12m` if it fits, else Haozhe runs it) | 1–2 nights | after Kevin's `train_pool` key (T39) |
 
 ## Repository layout
 - `rlproj/`: shared code.
