@@ -234,7 +234,7 @@ choice we made, not something to measure) · **closed** (answered; new runs are 
 | [P11](#p11) | Times from different machines are not comparable | validity | open | T37 (Xi) |
 | [P12](#p12) | Code behind R13–R16 is not in git | practical | open | T31 (Haozhe) |
 | [P13](#p13) | Result folders and summaries are inconsistent | practical | open | each owner |
-| [P14](#p14) | Which results get space in the final report | scope | **decision** | review Nov 29 (Kevin leads) |
+| [P14](#p14) | Which results get space in the final report | scope | **decision** | review Nov 29 (all members decide) |
 | [P15](#p15) | Crafter was not reproducible | practical | solved | – |
 | [P16](#p16) | World generation was the bottleneck | practical | solved | – |
 | [P17](#p17) | DreamerV3 had no learning curves | validity | solved | – |
@@ -455,7 +455,7 @@ are where choices matter most.
 | Supporting (a small figure or 1–2 sentences each) | DreamerV3 `size1m` (E4), plain DQN, the reward ablation (E5), the train-ratio sweep (E3) | They explain *why*: size matters, multi-step returns matter, the reward matters. |
 | Lower priority for new runs | `size1m` with the standard reward, more train ratios | Already answered (P1, E3). Still allowed if someone has a reason. |
 
-**Review on Sun Nov 29**, after the 500k runs and the first mechanism runs. A result keeps its
+**Review on Sun Nov 29, decided by all members**, after the 500k runs and the first mechanism runs. A result keeps its
 space in the main figure if it (a) is the best of its family, or (b) answers a question no other
 result answers. Everything else moves to the supporting results, but stays in the repository.
 
@@ -469,7 +469,7 @@ help with planning, not deadlines.
 |---|---|---|
 | 1 | Fix the validity problems that block the main table | P6, P7, P12, start P8; P4 (analysis only) |
 | 2 | Mechanism and new axes | P2, P3, P9, P10, P11 |
-| – | **Scope review on Nov 29** (decides report space only) | P14 |
+| – | **Scope review on Nov 29**, decided by all members (report space only) | P14 |
 | 3 | Whatever is still open, plus anything the review adds | – |
 
 ### How each person works
@@ -486,13 +486,12 @@ help with planning, not deadlines.
 - **Own ideas:** everyone is welcome to propose their own. Add the idea as a new problem entry (or
   an alternative under an existing one) and we include it in the plan.
 
-### Balance of the work
-The split balances total effort (design, implementation, runs and analysis), not machine hours.
-Kevin takes the largest share of design and integration.
+### Work split at a glance
+Each person's problems, implementation, runs and analysis.
 
-| Person | Problems led | Design + implementation | Runs | Analysis and writing |
+| Person | Problems owned | Design + implementation | Runs | Analysis and writing |
 |---|---|---|---|---|
-| **Kevin** (A) | P3, P4, P6, P9 (analysis), P14 | `train_pool` key (shared-code PR), tech-tree analysis, `wm_eval` on unseen-world games with per-achievement recall, report skeleton | model-free 500k runs, PPO number-of-worlds runs (~8 h on A) | RQ2 number of worlds, tech-tree depth, RQ3 on unseen worlds; keeps the problem log, README and PLAN current; reviews shared-code PRs; leads the Nov 29 review |
+| **Kevin** (A) | P3, P4, P6, P9 (analysis) | `train_pool` key (shared-code PR), tech-tree analysis, `wm_eval` on unseen-world games with per-achievement recall, report skeleton | model-free 500k runs, PPO number-of-worlds runs (~8 h on A) | RQ2 number of worlds, tech-tree depth, RQ3 on unseen worlds |
 | **Haozhe** (C) | P1, P7, P8, P12, P9 (data) | commit + test the resume launcher, unseen-world game collector, demo GIFs | `size12m`: from scratch, sparse × 3, `repval` off, optional `size25m` (~25 h on C) | does resuming matter; how much the reward matters at `size12m`; what the demos show |
 | **Xi** (B) | P2, P5, P10, P11 | `repval`-off configs, GPU timing script, per-seed curves + full-run AUC in `plots/`, wall-clock-matched PPO | `size1m` `repval` off × 3, cost table, wall-clock PPO, DreamerV3 number-of-worlds runs (~10–20 h on B) | how the reward reaches the policy (combining both `repval` runs); cost per hour of each method |
 
@@ -501,7 +500,7 @@ Machine hours are estimates scaled from measured times.
 ### Kevin, setup A (MacBook Pro M2 Max)
 - **Machine limits:** one job at a time. Model-free runs take minutes to ~1 h. DreamerV3 `size1m`
   takes ~4.6 h per 100k steps, and `size12m` is not practical (~18 h per 100k).
-- **Focus:** model-free baselines, analysis that needs no GPU, shared tooling, and integration.
+- **Focus:** model-free baselines, analysis that needs no GPU, and shared tooling.
 
 | Task | Problem | Job | Machine time | Can start |
 |---|---|---|---|---|
@@ -510,7 +509,6 @@ Machine hours are estimates scaled from measured times.
 | T39 | P3 | Design the number-of-worlds experiment; `train_pool` config key (PR); PPO on 1 / 10 / 50 / 500 worlds × 3 seeds | ~3 h | now |
 | T16 | P9 | `wm_eval` on unseen-world games with per-achievement recall; tested on `size1m` checkpoints | ~1 h | after T15 |
 | T22 | – | Report skeleton; each owner fills in their own section | none | now |
-| – | P14 | Prepare and lead the scope review | none | Nov 29 |
 
 ### Haozhe, setup C (fastest GPU)
 - **Machine:** `size12m` trains 250k steps in ~2.2 h and PPO 500k in ~3 min.
